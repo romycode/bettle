@@ -1,0 +1,7 @@
+.hide {
+  color: transparent;
+  font-size: 0;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+}
