@@ -1,10 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useTheme } from '@/stores/theme'
+import { storeToRefs } from 'pinia'
+
+const theme = useTheme()
+const { iconColor } = storeToRefs(theme)
+</script>
 
 <template>
   <span class="icon">
     <svg
       class="icon"
-      fill="#FFFFFF"
       viewBox="0 0 36 36"
       version="1.1"
       preserveAspectRatio="xMidYMid meet"
@@ -34,5 +39,6 @@
 <style>
 .icon {
   width: 100%;
+  fill: v-bind(iconColor);
 }
 </style>

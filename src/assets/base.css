@@ -9,10 +9,28 @@
   background-color: transparent;
 
   border-radius: var(--border-radius);
+
+  font-family: 'Geist Mono Medium' !important;
+  font-size: 10pt;
+  line-height: 1.5rem;
 }
 
 html,
 body {
   width: 100%;
   height: 100%;
+}
+
+textarea,
+input,
+select,
+button {
+  appearance: none;
+  color: var(--foreground-color);
+  background-color: var(--background-color);
+
+  &:hover,
+  &:focus {
+    outline: none;
+  }
 }

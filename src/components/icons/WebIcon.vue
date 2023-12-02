@@ -1,10 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useTheme } from '@/stores/theme'
+import { storeToRefs } from 'pinia'
+
+const theme = useTheme()
+const { iconColor } = storeToRefs(theme)
+</script>
 
 <template>
   <span class="icon">
     <svg
       class="icon"
-      fill="#000000"
       viewBox="0 0 32 32"
       style="fill-rule: evenodd; clip-rule: evenodd; stroke-linejoin: round; stroke-miterlimit: 2"
       version="1.1"
@@ -25,5 +30,6 @@
 <style>
 .icon {
   width: 100%;
+  fill: v-bind(iconColor);
 }
 </style>

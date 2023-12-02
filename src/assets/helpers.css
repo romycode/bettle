@@ -5,3 +5,9 @@
   opacity: 0;
   width: 0;
 }
+
+.red-dim {
+  &:hover {
+    background-color: var(--red-dim) !important;
+  }
+}

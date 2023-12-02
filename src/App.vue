@@ -1,30 +1,56 @@
 <script setup lang="ts">
-import GraphIcon from '@/components/GraphIcon.vue'
-import WebIcon from './components/WebIcon.vue'
-import { computed, reactive, ref, toRefs } from 'vue'
+import Editor from '@/components/Editor.vue'
+import WebIcon from '@/components/icons/WebIcon.vue'
+import { computed, onMounted, reactive, ref, toRefs } from 'vue'
 import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/api/http'
+import ThemeSelector from '@/components/ThemeSelector.vue'
+import BaseSelect from './components/BaseSelect.vue'
 
-type RequestConf = {
+type Header = { name: string; val: string }
+type Query = { name: string; val: string }
+
+type RequestConfiguration = {
+  id: string
   url: string
   method: string
   body: string
-  query: Record<string, string>
-  headers: Record<string, string>
+  query: Array<Query>
+  headers: Array<Header>
 }
 
-const requests = reactive<Record<string, RequestConf>>({})
+const requests = reactive<Record<string, RequestConfiguration>>(
+  JSON.parse(localStorage.getItem('apps-requests') ?? '{}')
+)
 
-const selectedRequest: RequestConf = reactive({
+const currentRequestId = ref<string>(crypto.randomUUID())
+
+const currentRequestInformation = reactive<RequestConfiguration>({
+  id: '',
   url: '',
   method: 'get',
   body: '',
-  query: {},
-  headers: {}
+  query: [],
+  headers: []
 })
 
-const selectedRequestId = computed(() => selectedRequest.method + '#' + selectedRequest.url)
+const { method, url, body, query, headers } = toRefs(currentRequestInformation)
 
-const { url, method, body, query, headers } = toRefs(selectedRequest)
+const reqBody = computed(() => body.value)
+
+const isNewRequest = ref(true)
+
+async function saveRequest() {
+  isNewRequest.value = false
+  currentRequestInformation['id'] = currentRequestId.value
+  requests[currentRequestId.value] = JSON.parse(JSON.stringify(currentRequestInformation))
+
+  localStorage.setItem('apps-requests', JSON.stringify(requests))
+}
+
+async function removeRequest(id: string) {
+  delete requests[id]
+  localStorage.setItem('apps-requests', JSON.stringify(requests))
+}
 
 let response = ref('')
 let responseTime = ref(0)
@@ -59,16 +85,15 @@ async function send() {
   responseHeaders.value = JSON.stringify(res.headers, null, 2)
 }
 
-async function save() {
-  requests[selectedRequestId.value] = JSON.parse(JSON.stringify(selectedRequest))
-}
+async function updateSelectedRequest(request: RequestConfiguration) {
+  isNewRequest.value = false
+  currentRequestId.value = request.id
 
-async function updateSelected(request: RequestConf) {
-  body.value = request.body
-  method.value = request.method
   url.value = request.url
   query.value = request.query
+  method.value = request.method
   headers.value = request.headers
+  body.value = request.body
 }
 
 const requestBodyHeaders = ref(false)
@@ -121,44 +146,66 @@ const activeTab = computed({
     requestParamsTab.value = false
   }
 })
+
+async function addHeader() {
+  headers.value.push({ name: '', val: '' })
+}
+
+async function newRequest() {
+  isNewRequest.value = true
+  currentRequestId.value = crypto.randomUUID()
+
+  url.value = ''
+  query.value = []
+  method.value = 'get'
+  headers.value = []
+  body.value = ''
+}
 </script>
 
 <template>
   <aside class="sidebar">
+    <ThemeSelector></ThemeSelector>
     <ul class="collection">
-      <li class="collection-item">
-        <GraphIcon />
-        <span>root/</span>
+      <li
+        @click="newRequest"
+        :class="[
+          'collection-item',
+          {
+            'collection-item--active': isNewRequest
+          }
+        ]"
+      >
+        <WebIcon class="icon" />
+        <span class="name">new request</span>
       </li>
-      <template v-for="request in requests" :key="request.method + '#' + request.url">
+      <template v-for="(request, id) in requests" :key="id">
         <li
-          @click="() => updateSelected(request)"
+          @click="() => updateSelectedRequest(request)"
           :class="[
             'collection-item',
             {
-              'collection-item--active': request.method + '#' + request.url === selectedRequestId
+              'collection-item--active': id === currentRequestId
             }
           ]"
         >
-          <WebIcon />
-          <span>{{ request.method + ' - ' + request.url }}</span>
+          <WebIcon class="icon" />
+          <span class="name">{{ request.method + ' - ' + request.url }}</span>
+          <span class="delete red-dim" @click="() => removeRequest(request.id)"> X </span>
         </li>
       </template>
     </ul>
   </aside>
   <main class="client">
     <section class="request-url">
-      <div class="method">
-        <label class="hide" for="method">request method</label>
-        <select v-model="method" class="method-selector" name="method" id="method">
-          <option value="get">get</option>
-          <option value="post">post</option>
-          <option value="put">put</option>
-          <option value="patch">patch</option>
-          <option value="delete">delete</option>
-          <option value="options">options</option>
-        </select>
-      </div>
+      <BaseSelect v-model="method" class="method">
+        <option value="get">get</option>
+        <option value="post">post</option>
+        <option value="put">put</option>
+        <option value="patch">patch</option>
+        <option value="delete">delete</option>
+        <option value="options">options</option>
+      </BaseSelect>
       <div class="url">
         <label class="hide" for="url">request url target</label>
         <input v-model="url" class="url__input" type="text" name="url" id="url" />
@@ -167,7 +214,7 @@ const activeTab = computed({
         <button class="send-button" @click="send" type="submit">send</button>
       </div>
       <div class="save">
-        <button class="save-button" @click="save" type="button">save</button>
+        <button class="save-button" @click="saveRequest" type="button">save</button>
       </div>
     </section>
     <section class="viewer">
@@ -218,13 +265,28 @@ const activeTab = computed({
           </label>
         </div>
         <div class="tab-content">
-          <textarea
-            v-if="activeTab === 'body'"
-            v-model="body"
-            class="text"
-            name="request-body"
-            id="body"
-          ></textarea>
+          <Editor
+            class="request-body-editor"
+            id="request-body-editor"
+            @update="body = $event"
+            :displayText="reqBody"
+            v-show="activeTab === 'body'"
+          ></Editor>
+          <template v-show="activeTab === 'headers'">
+            <div class="request-headers">
+              <form @submit.prevent>
+                <template v-for="(header, i) in headers" :key="i + header.name">
+                  <label for="header-name">
+                    <input v-model="header.name" type="text" name="header-name" id="header-name" />
+                  </label>
+                  <label for="header-val">
+                    <input v-model="header.val" type="text" name="header-val" id="header-val" />
+                  </label>
+                </template>
+                <button @click="addHeader">add</button>
+              </form>
+            </div>
+          </template>
         </div>
       </section>
       <section class="response-viewer">
@@ -234,13 +296,11 @@ const activeTab = computed({
           <span class="response-size"></span>
         </div>
         <div class="body">
-          <textarea
-            readonlygit
-            v-model="bodyText"
-            class="text"
-            name="response-body"
-            id="response-body"
-          ></textarea>
+          <Editor
+            class="response-body-viewer"
+            id="response-body-viewer"
+            :display-text="bodyText"
+          ></Editor>
         </div>
       </section>
     </section>
@@ -252,22 +312,24 @@ const activeTab = computed({
   display: grid;
 
   gap: var(--spacing);
-  grid-template-rows: 1fr;
-  grid-template-columns: minmax(20px, 0.25fr) 1fr;
+  grid-template-rows: minmax(300px, 1fr);
+  grid-template-columns: minmax(50px, 0.25fr) minmax(300px, 0.75fr);
   grid-template-areas: 'sidebar client';
 
   width: 100%;
   height: 100%;
 
-  overflow: hidden;
-
   padding: var(--spacing);
+
+  color: var(--foreground-color);
+  background-color: var(--background-color);
 
   & > .sidebar {
     display: flex;
     grid-area: sidebar;
 
     gap: var(--spacing);
+    flex-direction: column;
 
     padding: var(--spacing);
 
@@ -283,14 +345,53 @@ const activeTab = computed({
       & > .collection-item {
         display: grid;
 
-        gap: var(--spacing);
-        grid-template-columns: minmax(20px, 0.05fr) 1fr;
+        grid-template-rows: 1fr;
+        grid-template-columns: minmax(1px, 0.1fr) minmax(1px, 1fr) minmax(1px, 0.1fr);
+        grid-template-areas: 'icon name delete';
+        align-items: center;
 
-        padding: var(--spacing);
         border: var(--border-size) solid var(--border-color);
+
+        padding: 0 0 0 var(--spacing);
 
         &.collection-item--active {
           background-color: var(--background-selected-color);
+
+          & > .delete {
+            color: var(--foreground-color);
+            background-color: var(--background-color);
+          }
+        }
+
+        & > .icon {
+          grid-area: icon;
+          fill: inherit !important;
+        }
+
+        & > .name {
+          grid-area: name;
+
+          padding: calc(var(--spacing) * 1.5);
+
+          overflow-x: scroll;
+
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+
+          &::-webkit-scrollbar {
+            display: none;
+          }
+        }
+
+        & > .delete {
+          grid-area: delete;
+
+          justify-content: center;
+
+          width: 100%;
+          height: calc(100% - var(--spacing));
+
+          background-color: var(--background-color);
         }
 
         & > * {
@@ -298,7 +399,6 @@ const activeTab = computed({
           align-items: center;
 
           white-space: nowrap;
-          overflow-x: scroll;
           scroll-padding: 0;
           scroll-margin: 0;
         }
@@ -311,8 +411,8 @@ const activeTab = computed({
     grid-area: client;
 
     gap: var(--spacing);
-    grid-template-rows: 0.05fr 1fr;
-    grid-template-columns: 1fr;
+    grid-template-rows: minmax(40px, 0.05fr) minmax(200px, auto);
+    grid-template-columns: minmax(300px, 1fr);
     grid-template-areas: 'request-url' 'viewer';
 
     & > .request-url {
@@ -320,7 +420,8 @@ const activeTab = computed({
       grid-area: request-url;
 
       gap: var(--spacing);
-      grid-template-columns: 0.1fr 1fr 0.1fr 0.1fr;
+      grid-template-rows: 1fr;
+      grid-template-columns: 0.15fr 1fr 0.1fr 0.1fr;
       grid-template-areas: 'method url send save';
 
       & > .method {
@@ -331,8 +432,7 @@ const activeTab = computed({
         height: 100%;
 
         & > .method-selector {
-          appearance: none;
-          height: 100%;
+          max-height: 2.5rem;
           border-radius: var(--border-radius);
           text-align: center;
         }
@@ -391,8 +491,8 @@ const activeTab = computed({
       grid-area: viewer;
 
       gap: var(--spacing);
-      grid-template-rows: 1fr;
-      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(1px, 1fr);
+      grid-template-columns: minmax(1px, 1fr) minmax(1px, 1fr);
       grid-template-areas: 'request-config response-viewer';
 
       & > .request-config {
@@ -400,10 +500,10 @@ const activeTab = computed({
         grid-area: request-config;
 
         gap: var(--spacing);
-        grid-template-rows: 0.05fr 1fr;
+        grid-template-rows: minmax(1px, 0.05fr) minmax(1px, 1fr);
         grid-template-areas: 'tabs' 'tab-content';
 
-        padding: var(--spacing);
+        overflow: hidden;
 
         & > .tabs {
           display: flex;
@@ -440,19 +540,9 @@ const activeTab = computed({
           gap: var(--spacing);
           align-items: center;
 
-          & > .text {
-            resize: none;
-            overflow: hidden;
-
+          & > .request-body-editor {
             width: 100%;
             height: 100%;
-
-            padding: var(--spacing);
-
-            &:hover,
-            &:focus {
-              outline: none;
-            }
           }
         }
       }
@@ -462,10 +552,8 @@ const activeTab = computed({
         grid-area: response-viewer;
 
         gap: var(--spacing);
-        grid-template-rows: 0.05fr 1fr;
+        grid-template-rows: minmax(1px, 0.05fr) minmax(1px, 1fr);
         grid-template-areas: 'stats' 'body';
-
-        padding: var(--spacing);
 
         & > .stats {
           display: flex;
@@ -483,22 +571,8 @@ const activeTab = computed({
           grid-template-columns: 1fr;
           grid-template-areas: 'body';
 
-          & > .text {
-            grid-area: body;
-
-            appearance: none;
-
-            padding: var(--spacing);
-
-            resize: none;
-            overflow: hidden;
-
-            padding: var(--spacing);
-
-            &:hover,
-            &:focus {
-              outline: none;
-            }
+          & > .response-body-viewer {
+            overflow-x: scroll;
           }
         }
       }
