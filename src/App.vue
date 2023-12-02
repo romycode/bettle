@@ -6,6 +6,7 @@ import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/a
 import ThemeSelector from '@/components/ThemeSelector.vue'
 import BaseSelect from './components/BaseSelect.vue'
 import BaseInput from './components/BaseInput.vue'
+import BaseButton from './components/BaseButton.vue'
 
 // component internal types
 type Header = { name: string; val: string }
@@ -227,12 +228,10 @@ async function newRequest() {
         name="request-url"
         label="request url"
       ></BaseInput>
-      <div class="send">
-        <button class="send-button" @click="send" type="submit">send</button>
-      </div>
-      <div class="save">
-        <button class="save-button" @click="saveRequest" type="button">save</button>
-      </div>
+      <BaseButton id="request-send" class="send" name="request-send" @click="send">send</BaseButton>
+      <BaseButton id="request-save" class="save" name="request-save" @click="saveRequest"
+        >save</BaseButton
+      >
     </section>
     <section class="viewer">
       <section class="request-config">
@@ -305,7 +304,9 @@ async function newRequest() {
                   label="header-val"
                 ></BaseInput>
               </template>
-              <button @click="addHeader">add</button>
+              <BaseButton id="request-header-new" name="request-header-new" @click="addHeader"
+                >add</BaseButton
+              >
             </form>
           </div>
         </div>
@@ -380,7 +381,6 @@ async function newRequest() {
 
           & > .delete {
             color: var(--foreground-color);
-            background-color: var(--background-color);
           }
         }
 
@@ -413,7 +413,6 @@ async function newRequest() {
           width: 50%;
           height: 50%;
 
-          background-color: var(--background-color);
           border: var(--border-size) solid var(--border-color);
 
           & > p {
@@ -481,10 +480,6 @@ async function newRequest() {
       & > .send {
         grid-area: send;
 
-        padding: var(--spacing) 0;
-
-        height: 100%;
-
         & > .send-button {
           width: 100%;
           height: 100%;
@@ -495,8 +490,6 @@ async function newRequest() {
 
       & > .save {
         grid-area: save;
-
-        padding: var(--spacing) 0;
 
         height: 100%;
 

@@ -27,7 +27,6 @@ select,
 button {
   appearance: none;
   color: var(--foreground-color);
-  background-color: var(--background-color);
 
   &:hover,
   &:focus {

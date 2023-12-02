@@ -19,12 +19,9 @@ defineEmits<{
 
 <template>
   <div class="input-box">
-    <label
-      class="input-box__label hide"
-      :class="{ 'input-box__label--hidden': !showLabel }"
-      :for="id"
-      >{{ label }}</label
-    >
+    <label class="input-box__label" :class="{ 'input-box__label--hidden': !showLabel }" :for="id">{{
+      label
+    }}</label>
     <input
       class="input-box__text"
       :id="id"
@@ -47,7 +44,7 @@ defineEmits<{
   padding: 0 var(--spacing);
 
   & > .input-box__label {
-    & > .input-box__label--hidden {
+    &.input-box__label--hidden {
       color: transparent;
       font-size: 0;
       position: absolute;
