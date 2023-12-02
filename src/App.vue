@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import Editor from '@/components/Editor.vue'
 import WebIcon from '@/components/icons/WebIcon.vue'
 import { computed, reactive, ref, toRefs } from 'vue'
 import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/api/http'
 import ThemeSelector from '@/components/ThemeSelector.vue'
-import BaseSelect from './components/BaseSelect.vue'
-import BaseInput from './components/BaseInput.vue'
-import BaseButton from './components/BaseButton.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseEditor from '@/components/BaseEditor.vue'
 
 // component internal types
 type Header = { name: string; val: string }
@@ -92,13 +92,18 @@ async function send() {
     }
   }
 
-  const res: Response<unknown> = await fetch(url?.value as string, opts)
+  try {
+    const res: Response<unknown> = await fetch(url?.value as string, opts)
 
-  const end = new Date().getTime()
-
-  responseTime.value = end - start
-  response.value = JSON.stringify(res.data, null, 2)
-  responseHeaders.value = JSON.stringify(res.headers, null, 2)
+    response.value = JSON.stringify(res.data, null, 2)
+    responseHeaders.value = JSON.stringify(res.headers, null, 2)
+  } catch (e) {
+    // TODO: show in the UI the errors
+    // console.error(e)
+  } finally {
+    const end = new Date().getTime()
+    responseTime.value = end - start
+  }
 }
 
 async function updateSelectedRequest(request: RequestConfiguration) {
@@ -177,6 +182,14 @@ async function newRequest() {
   headers.value = []
   body.value = ''
 }
+
+async function resetCurrentRequest() {
+  url.value = ''
+  query.value = []
+  method.value = 'get'
+  headers.value = []
+  body.value = ''
+}
 </script>
 
 <template>
@@ -194,6 +207,7 @@ async function newRequest() {
       >
         <WebIcon class="icon" />
         <span class="name">new request</span>
+        <div class="delete red-dim" @click="resetCurrentRequest"><p>c</p></div>
       </li>
       <template v-for="(request, id) in requests" :key="id">
         <li
@@ -212,7 +226,7 @@ async function newRequest() {
       </template>
     </ul>
   </aside>
-  <main class="client">
+  <main class="content">
     <section class="request-url">
       <BaseSelect
         v-model="method"
@@ -234,7 +248,7 @@ async function newRequest() {
       >
     </section>
     <section class="viewer">
-      <section class="request-config">
+      <section class="request-cofiguration">
         <div class="tabs">
           <label for="request-body" :class="{ active: activeTab === 'body' }">
             <p>body</p>
@@ -281,13 +295,13 @@ async function newRequest() {
           </label>
         </div>
         <div class="tab-content">
-          <Editor
+          <BaseEditor
             class="request-body-editor"
             id="request-body-editor"
             @update="body = $event"
             :displayText="reqBody"
             v-show="activeTab === 'body'"
-          ></Editor>
+          ></BaseEditor>
           <div class="request-headers" v-show="activeTab === 'headers'">
             <form @submit.prevent>
               <template v-for="(header, i) in headers" :key="i + header.name">
@@ -313,16 +327,12 @@ async function newRequest() {
       </section>
       <section class="response-viewer">
         <div class="stats">
-          <span class="response-code"></span>
-          <span class="response-time">{{ responseTime }} ms</span>
-          <span class="response-size"></span>
+          <div class="response-code"></div>
+          <div class="response-time">{{ responseTime }} ms</div>
+          <div class="response"></div>
         </div>
         <div class="body">
-          <Editor
-            class="response-body-viewer"
-            id="response-body-viewer"
-            :display-text="bodyText"
-          ></Editor>
+          <BaseEditor id="response-body-editor" :display-text="bodyText"></BaseEditor>
         </div>
       </section>
     </section>
@@ -334,12 +344,15 @@ async function newRequest() {
   display: grid;
 
   gap: var(--spacing);
-  grid-template-rows: minmax(300px, 1fr);
-  grid-template-columns: minmax(50px, 0.25fr) minmax(300px, 0.75fr);
-  grid-template-areas: 'sidebar client';
+  grid-template-areas: 'sidebar content';
+  grid-template-rows: minmax(var(--bt-min-h), var(--bt-h));
+  grid-template-columns:
+    minmax(var(--bt-sb-min-w), var(--bt-sb-w))
+    minmax(var(--bt-cnt-min-w), var(--bt-cnt-w));
 
   width: 100%;
   height: 100%;
+  min-width: calc(var(--bt-sb-min-w) + var(--bt-cnt-min-w));
 
   padding: var(--spacing);
 
@@ -347,13 +360,12 @@ async function newRequest() {
   background-color: var(--background-color);
 
   & > .sidebar {
-    display: flex;
+    display: grid;
     grid-area: sidebar;
 
     gap: var(--spacing);
-    flex-direction: column;
-
-    padding: var(--spacing);
+    grid-auto-flow: row;
+    grid-auto-rows: minmax(var(--grid-slim-row-min-h), var(--grid-slim-row-h)) auto;
 
     & > .collection {
       display: flex;
@@ -364,10 +376,12 @@ async function newRequest() {
       width: 100%;
       height: 100%;
 
+      overflow: hidden;
+      overflow-y: auto;
+
       & > .collection-item {
         display: grid;
 
-        grid-template-rows: 1fr;
         grid-template-columns: minmax(1px, 0.1fr) minmax(1px, 1fr) minmax(1px, 0.1fr);
         grid-template-areas: 'icon name delete';
         align-items: center;
@@ -381,6 +395,7 @@ async function newRequest() {
 
           & > .delete {
             color: var(--foreground-color);
+            background-color: var(--background-color);
           }
         }
 
@@ -392,7 +407,7 @@ async function newRequest() {
         & > .name {
           grid-area: name;
 
-          padding: calc(var(--spacing) * 1.5);
+          padding: 0 var(--spacing);
 
           overflow-x: scroll;
 
@@ -407,13 +422,21 @@ async function newRequest() {
         & > .delete {
           grid-area: delete;
 
+          padding: var(--spacing);
+
           justify-content: center;
+          justify-items: center;
           justify-self: end;
+          align-items: center;
 
           width: 50%;
           height: 50%;
 
           border: var(--border-size) solid var(--border-color);
+
+          &:hover {
+            background-color: var(--red-dim);
+          }
 
           & > p {
             text-align: center;
@@ -432,73 +455,47 @@ async function newRequest() {
     }
   }
 
-  & > .client {
+  & > .content {
     display: grid;
-    grid-area: client;
+    grid-area: content;
 
     gap: var(--spacing);
-    grid-template-rows: minmax(40px, 0.05fr) minmax(200px, auto);
-    grid-template-columns: minmax(300px, 1fr);
-    grid-template-areas: 'request-url' 'viewer';
+    grid-template-areas: 'url' 'viewer';
+    grid-template-rows:
+      minmax(var(--bt-cnt-url-min-h), var(--bt-cnt-url-h))
+      minmax(var(--bt-cnt-vw-min-h), var(--bt-cnt-vw-h));
+    grid-template-columns: minmax(var(--bt-cnt-min-h), 1fr);
 
     & > .request-url {
       display: grid;
-      grid-area: request-url;
+      grid-area: url;
 
       gap: var(--spacing);
-      grid-template-rows: 1fr;
-      grid-template-columns: 0.15fr 1fr 0.1fr 0.1fr;
-      grid-template-areas: 'method url send save';
+      grid-template-areas: 'method uri send save';
+      grid-template-rows: minmax(var(--bt-cnt-url-min-h), 1fr);
+      grid-template-columns:
+        minmax(var(--bt-cnt-url-method-min-w), var(--bt-cnt-url-method-w))
+        minmax(var(--bt-cnt-url-uri-min-w), var(--bt-cnt-url-uri-w))
+        minmax(var(--bt-cnt-url-send-min-w), var(--bt-cnt-url-send-w))
+        minmax(var(--bt-cnt-url-save-min-w), var(--bt-cnt-url-save-w));
+
+      justify-items: center;
 
       & > .method {
         grid-area: method;
-
-        height: 100%;
-
-        & > .method-selector {
-          max-height: 2.5rem;
-          border-radius: var(--border-radius);
-          text-align: center;
-        }
+        width: 100%;
       }
 
       & > .url {
-        grid-area: url;
-
-        & > .url__input {
-          appearance: none;
-
-          width: 100%;
-          height: 100%;
-
-          padding: var(--spacing);
-
-          border: var(--border-size) solid var(--border-color);
-        }
+        grid-area: uri;
       }
 
       & > .send {
         grid-area: send;
-
-        & > .send-button {
-          width: 100%;
-          height: 100%;
-
-          border: var(--border-size) solid var(--border-color);
-        }
       }
 
       & > .save {
         grid-area: save;
-
-        height: 100%;
-
-        & > .save-button {
-          width: 100%;
-          height: 100%;
-
-          border: var(--border-size) solid var(--border-color);
-        }
       }
     }
 
@@ -507,17 +504,22 @@ async function newRequest() {
       grid-area: viewer;
 
       gap: var(--spacing);
-      grid-template-rows: minmax(1px, 1fr);
-      grid-template-columns: minmax(1px, 1fr) minmax(1px, 1fr);
-      grid-template-areas: 'request-config response-viewer';
+      grid-template-areas: 'request-cofiguration response-viewer';
+      grid-template-rows: minmax(var(--bt-cnt-vw-min-h), 1fr);
+      grid-template-columns:
+        minmax(var(--bt-cnt-vw-cfg-min-w), var(--bt-cnt-vw-cfg-w))
+        minmax(var(--bt-cnt-vw-res-min-w), var(--bt-cnt-vw-res-w));
 
-      & > .request-config {
+      & > .request-cofiguration {
         display: grid;
-        grid-area: request-config;
+        grid-area: request-cofiguration;
 
         gap: var(--spacing);
-        grid-template-rows: minmax(1px, 0.05fr) minmax(1px, 1fr);
         grid-template-areas: 'tabs' 'tab-content';
+        grid-template-rows:
+          minmax(var(--bt-cnt-vw-cfg-tabs-min-h), var(--bt-cnt-vw-cfg-tabs-h))
+          minmax(var(--bt-cnt-vw-cfg-tab-cnt-min-h), var(--bt-cnt-vw-cfg-tab-cnt-h));
+        grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
 
         overflow: hidden;
 
@@ -556,8 +558,9 @@ async function newRequest() {
           gap: var(--spacing);
           align-items: center;
 
+          width: 100%;
+
           & > .request-body-editor {
-            width: 100%;
             height: 100%;
           }
         }
@@ -568,28 +571,23 @@ async function newRequest() {
         grid-area: response-viewer;
 
         gap: var(--spacing);
-        grid-template-rows: minmax(1px, 0.05fr) minmax(1px, 1fr);
         grid-template-areas: 'stats' 'body';
+        grid-template-rows:
+          minmax(var(--bt-cnt-vw-res-stats-min-h), var(--bt-cnt-vw-res-stats-h))
+          minmax(var(--bt-cnt-vw-res-body-cnt-min-h), var(--bt-cnt-vw-res-body-cnt-h));
+        grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
 
         & > .stats {
           display: flex;
           grid-area: stats;
 
-          gap: var(--spacing);
+          justify-items: center;
           align-items: center;
         }
 
         & > .body {
-          display: grid;
+          display: flex;
           grid-area: body;
-
-          grid-template-rows: 1fr;
-          grid-template-columns: 1fr;
-          grid-template-areas: 'body';
-
-          & > .response-body-viewer {
-            overflow-x: scroll;
-          }
         }
       }
     }

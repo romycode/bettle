@@ -48,9 +48,7 @@ function change(event: Event) {
 
   position: relative;
 
-  min-height: 2.5rem;
-
-  padding: 0;
+  padding: var(--spacing) 0;
   border: var(--border-size) solid var(--border-color);
 
   & > .select-box__select {
@@ -58,7 +56,7 @@ function change(event: Event) {
     height: 100%;
 
     border: none;
-    padding: 0 var(--spacing);
+    padding: 0 0 0 var(--spacing);
 
     text-transform: uppercase;
 
@@ -70,7 +68,7 @@ function change(event: Event) {
   &::before,
   &::after {
     --size: 0.3rem;
-    --y-size: 0.4rem;
+    --size-y: 0.4rem;
     position: absolute;
     content: '';
     right: 0.75rem;
@@ -81,14 +79,14 @@ function change(event: Event) {
     border-left: var(--size) solid transparent;
     border-right: var(--size) solid transparent;
     border-bottom: var(--size) solid var(--foreground-color);
-    top: calc(50% - var(--y-size));
+    top: calc(50% - var(--size-y));
   }
 
   &::after {
     border-left: var(--size) solid transparent;
     border-right: var(--size) solid transparent;
     border-top: var(--size) solid var(--foreground-color);
-    bottom: calc(50% - var(--y-size));
+    bottom: calc(50% - var(--size-y));
   }
 }
 </style>

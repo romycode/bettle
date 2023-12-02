@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref, toRefs, watch } from 'vue'
 
-import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers, placeholder } from '@codemirror/view'
+import { Compartment, EditorState } from '@codemirror/state'
+import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap, indentWithTab } from '@codemirror/commands'
 import { json } from '@codemirror/lang-json'
 
-import { dracula } from 'thememirror'
+import { smoothy as lightTheme, boysAndGirls as darkTheme } from 'thememirror'
+import { useTheme } from '@/stores/theme'
+import { storeToRefs } from 'pinia'
+
+const { theme } = storeToRefs(useTheme())
 
 const props = defineProps<{
   id: string
@@ -24,8 +28,10 @@ const updateContent = (value: string) => {
   emits('update', value)
 }
 
+const { displayText } = toRefs(props)
+
 onMounted(() => {
-  let theme = EditorView.theme(
+  let mytheme = EditorView.theme(
     {
       '&': {
         maxHeight: '100%'
@@ -49,6 +55,8 @@ onMounted(() => {
     }
   )
 
+  const themeSwitcher = new Compartment()
+
   const updater = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
       updateContent(update.state.doc.toString())
@@ -58,13 +66,13 @@ onMounted(() => {
   let startState = EditorState.create({
     doc: '',
     extensions: [
-      theme,
+      mytheme,
       updater,
-      dracula,
       json(),
       lineNumbers(),
       keymap.of(defaultKeymap),
-      keymap.of([indentWithTab])
+      keymap.of([indentWithTab]),
+      themeSwitcher.of(darkTheme)
     ]
   })
 
@@ -72,8 +80,6 @@ onMounted(() => {
     state: startState,
     parent: document.querySelector(`#${props.id}`) as Element
   })
-
-  const { displayText } = toRefs(props)
 
   watch(displayText, () => {
     if (view.state.doc.toString() !== displayText.value) {
@@ -86,15 +92,25 @@ onMounted(() => {
       })
     }
   })
+
+  watch(theme, (newValue, oldValue) => {
+    console.log('currentAppTheme', newValue, oldValue)
+    if (newValue !== oldValue) {
+      view.dispatch({
+        effects: themeSwitcher.reconfigure(newValue === 'light' ? lightTheme : darkTheme)
+      })
+    }
+  })
 })
 </script>
 
 <template>
-  <div :id="id"></div>
+  <div :id="id" class="editor"></div>
 </template>
 
 <style>
-#editor {
+.editor {
+  display: block;
   width: 100%;
   height: 100%;
 }

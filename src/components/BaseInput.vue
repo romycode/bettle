@@ -41,12 +41,14 @@ defineEmits<{
   justify-items: center;
   align-items: center;
 
+  width: 100%;
+
   padding: 0 var(--spacing);
 
   & > .input-box__label {
     &.input-box__label--hidden {
       color: transparent;
-      font-size: 0;
+      font: 0;
       position: absolute;
       opacity: 0;
       width: 0;
@@ -55,6 +57,8 @@ defineEmits<{
 
   & > .input-box__text {
     width: 100%;
+
+    padding: var(--spacing);
 
     appearance: none;
     border: none;
