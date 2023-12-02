@@ -289,21 +289,25 @@ async function newRequest() {
             :displayText="reqBody"
             v-show="activeTab === 'body'"
           ></Editor>
-          <template v-show="activeTab === 'headers'">
-            <div class="request-headers">
-              <form @submit.prevent>
-                <template v-for="(header, i) in headers" :key="i + header.name">
-                  <label for="header-name">
-                    <input v-model="header.name" type="text" name="header-name" id="header-name" />
-                  </label>
-                  <label for="header-val">
-                    <input v-model="header.val" type="text" name="header-val" id="header-val" />
-                  </label>
-                </template>
-                <button @click="addHeader">add</button>
-              </form>
-            </div>
-          </template>
+          <div class="request-headers" v-show="activeTab === 'headers'">
+            <form @submit.prevent>
+              <template v-for="(header, i) in headers" :key="i + header.name">
+                <BaseInput
+                  v-model="header.name"
+                  id="header-name"
+                  name="header-name"
+                  label="header-name"
+                ></BaseInput>
+                <BaseInput
+                  v-model="header.name"
+                  id="header-val"
+                  name="header-val"
+                  label="header-val"
+                ></BaseInput>
+              </template>
+              <button @click="addHeader">add</button>
+            </form>
+          </div>
         </div>
       </section>
       <section class="response-viewer">
