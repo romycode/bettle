@@ -1,20 +1,71 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    id: string
+    name: string
+    label: string
+    showLabel?: boolean
+    modelValue: string
+  }>(),
+  {
+    showLabel: false
+  }
+)
+
+defineEmits<{
+  'update:modelValue': [value: string]
+}>()
+</script>
 
 <template>
-  <input class="base_input" />
+  <div class="input-box">
+    <label
+      class="input-box__label hide"
+      :class="{ 'input-box__label--hidden': !showLabel }"
+      :for="id"
+      >{{ label }}</label
+    >
+    <input
+      class="input-box__text"
+      :id="id"
+      :name="name"
+      type="text"
+      :value="modelValue"
+      @input="$emit('update:modelValue', $event.target?.value)"
+    />
+  </div>
 </template>
 
 <style>
-.base_input {
-  appearance: none;
+.input-box {
+  display: flex;
 
-  width: 100%;
-  height: 100%;
+  justify-items: center;
+  align-items: center;
+
+  padding: 0 var(--spacing);
+
+  & > .input-box__label {
+    & > .input-box__label--hidden {
+      color: transparent;
+      font-size: 0;
+      position: absolute;
+      opacity: 0;
+      width: 0;
+    }
+  }
+
+  & > .input-box__text {
+    width: 100%;
+
+    appearance: none;
+    border: none;
+
+    &:focus {
+      outline: none;
+    }
+  }
 
   border: var(--border-size) solid var(--border-color);
-
-  &:focus {
-    outline: none;
-  }
 }
 </style>

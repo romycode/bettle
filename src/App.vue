@@ -220,10 +220,13 @@ async function newRequest() {
         name="request-method"
         :options="methodOptions"
       ></BaseSelect>
-      <div class="url">
-        <label class="hide" for="url">request url target</label>
-        <input v-model="url" class="url__input" type="text" name="url" id="url" />
-      </div>
+      <BaseInput
+        v-model="url"
+        class="url"
+        id="request-url"
+        name="request-url"
+        label="request url"
+      ></BaseInput>
       <div class="send">
         <button class="send-button" @click="send" type="submit">send</button>
       </div>
@@ -458,8 +461,6 @@ async function newRequest() {
 
       & > .url {
         grid-area: url;
-
-        padding: var(--spacing) 0;
 
         & > .url__input {
           appearance: none;
