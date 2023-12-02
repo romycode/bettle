@@ -1,38 +1,61 @@
 <script setup lang="ts">
 defineProps<{
+  id: string
+  name: string
+  options: Array<string>
   modelValue: string
 }>()
+
+const emits = defineEmits<{
+  change: [value: string]
+  'update:modelValue': [value: string]
+}>()
+
+function change(event: Event) {
+  emits('update:modelValue', event.target?.value)
+  emits('change', event.target?.value)
+}
 </script>
 
 <template>
-  <div class="select-wrapper">
-    <select
-      class="select"
-      name="select-label-01"
-      id="select-label-01"
-      :value="modelValue"
-      @change="$emit('update:modelValue', $event.target?.value)"
-    >
-      <slot></slot>
+  <div class="select-box">
+    <label class="select-box__label" :for="id"></label>
+    <select class="select-box__select" :id="id" :name="name" :value="modelValue" @change="change">
+      <template v-for="(option, i) in options" :key="i">
+        <option
+          class="select-box__select__option"
+          :value="option"
+          :selected="modelValue === option"
+        >
+          {{ option }}
+        </option>
+      </template>
     </select>
     <label class="hide" for="select-label-01">request method</label>
   </div>
 </template>
 
 <style>
-.select-wrapper {
+.select-box {
+  width: 100%;
+
   position: relative;
+
   min-height: 2.5rem;
 
-  & > .select {
+  padding: 0;
+  border: var(--border-size) solid var(--border-color);
+
+  & > .select-box__select {
     width: 100%;
     height: 100%;
 
+    border: none;
     padding: 0 var(--spacing);
 
     text-transform: uppercase;
 
-    & > option {
+    & > .select-box__select__option {
       padding: var(--spacing);
     }
   }

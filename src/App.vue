@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import Editor from '@/components/Editor.vue'
 import WebIcon from '@/components/icons/WebIcon.vue'
-import { computed, onMounted, reactive, ref, toRefs } from 'vue'
+import { computed, reactive, ref, toRefs } from 'vue'
 import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/api/http'
 import ThemeSelector from '@/components/ThemeSelector.vue'
 import BaseSelect from './components/BaseSelect.vue'
+import BaseInput from './components/BaseInput.vue'
 
+// component internal types
 type Header = { name: string; val: string }
 type Query = { name: string; val: string }
 
@@ -17,6 +19,19 @@ type RequestConfiguration = {
   query: Array<Query>
   headers: Array<Header>
 }
+
+// static data
+const methodOptions = [
+  'get',
+  'put',
+  'post',
+  'patch',
+  'delete',
+  'options',
+  'head',
+  'connect',
+  'trace'
+]
 
 const requests = reactive<Record<string, RequestConfiguration>>(
   JSON.parse(localStorage.getItem('apps-requests') ?? '{}')
@@ -191,21 +206,20 @@ async function newRequest() {
         >
           <WebIcon class="icon" />
           <span class="name">{{ request.method + ' - ' + request.url }}</span>
-          <span class="delete red-dim" @click="() => removeRequest(request.id)"> X </span>
+          <div class="delete red-dim" @click="() => removeRequest(request.id)"><p>x</p></div>
         </li>
       </template>
     </ul>
   </aside>
   <main class="client">
     <section class="request-url">
-      <BaseSelect v-model="method" class="method">
-        <option value="get">get</option>
-        <option value="post">post</option>
-        <option value="put">put</option>
-        <option value="patch">patch</option>
-        <option value="delete">delete</option>
-        <option value="options">options</option>
-      </BaseSelect>
+      <BaseSelect
+        v-model="method"
+        id="request-method"
+        class="method"
+        name="request-method"
+        :options="methodOptions"
+      ></BaseSelect>
       <div class="url">
         <label class="hide" for="url">request url target</label>
         <input v-model="url" class="url__input" type="text" name="url" id="url" />
@@ -352,7 +366,7 @@ async function newRequest() {
 
         border: var(--border-size) solid var(--border-color);
 
-        padding: 0 0 0 var(--spacing);
+        padding: 0 var(--spacing);
 
         &.collection-item--active {
           background-color: var(--background-selected-color);
@@ -387,11 +401,17 @@ async function newRequest() {
           grid-area: delete;
 
           justify-content: center;
+          justify-self: end;
 
-          width: 100%;
-          height: calc(100% - var(--spacing));
+          width: 50%;
+          height: 50%;
 
           background-color: var(--background-color);
+          border: var(--border-size) solid var(--border-color);
+
+          & > p {
+            text-align: center;
+          }
         }
 
         & > * {
@@ -426,8 +446,6 @@ async function newRequest() {
 
       & > .method {
         grid-area: method;
-
-        padding: var(--spacing) 0;
 
         height: 100%;
 
