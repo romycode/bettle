@@ -20,7 +20,14 @@ function change(event: Event) {
 <template>
   <div class="select-box">
     <label class="select-box__label" :for="id"></label>
-    <select class="select-box__select" :id="id" :name="name" :value="modelValue" @change="change">
+    <select
+      class="select-box__select"
+      :id="id"
+      :data-testid="id"
+      :name="name"
+      :value="modelValue"
+      @change="change"
+    >
       <template v-for="(option, i) in options" :key="i">
         <option
           class="select-box__select__option"

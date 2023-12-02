@@ -28,6 +28,7 @@ defineEmits<{
     <input
       class="input-box__text"
       :id="id"
+      :data-testid="id"
       :name="name"
       type="text"
       :value="modelValue"
