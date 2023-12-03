@@ -94,7 +94,6 @@ onMounted(() => {
   })
 
   watch(theme, (newValue, oldValue) => {
-    console.log('currentAppTheme', newValue, oldValue)
     if (newValue !== oldValue) {
       view.dispatch({
         effects: themeSwitcher.reconfigure(newValue === 'light' ? lightTheme : darkTheme)

@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import WebIcon from '@/components/icons/WebIcon.vue'
 import { computed, reactive, ref, toRefs } from 'vue'
 import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/api/http'
-import ThemeSelector from '@/components/ThemeSelector.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
-import BaseInput from '@/components/BaseInput.vue'
-import BaseButton from '@/components/BaseButton.vue'
-import BaseEditor from '@/components/BaseEditor.vue'
+import Sidebar from './components/Sidebar.vue'
+import WebIcon from './components/icons/WebIcon.vue'
+import Content from './components/Content.vue'
 
 // component internal types
 type Header = { name: string; val: string }
@@ -53,10 +50,11 @@ const { method, url, body, query, headers } = toRefs(currentRequestInformation)
 
 const reqBody = computed(() => body.value)
 
-const isNewRequest = ref(true)
+const isNewRequest = computed<boolean>(
+  () => !Object.keys(requests).includes(currentRequestId.value)
+)
 
 async function saveRequest() {
-  isNewRequest.value = false
   currentRequestInformation['id'] = currentRequestId.value
   requests[currentRequestId.value] = JSON.parse(JSON.stringify(currentRequestInformation))
 
@@ -64,6 +62,10 @@ async function saveRequest() {
 }
 
 async function removeRequest(id: string) {
+  if (currentRequestId.value === id) {
+    resetCurrentRequest()
+  }
+
   delete requests[id]
   localStorage.setItem('apps-requests', JSON.stringify(requests))
 }
@@ -99,7 +101,6 @@ async function send() {
     responseHeaders.value = JSON.stringify(res.headers, null, 2)
   } catch (e) {
     // TODO: show in the UI the errors
-    // console.error(e)
   } finally {
     const end = new Date().getTime()
     responseTime.value = end - start
@@ -107,7 +108,10 @@ async function send() {
 }
 
 async function updateSelectedRequest(request: RequestConfiguration) {
-  isNewRequest.value = false
+  if (!isNewRequest.value) {
+    saveRequest()
+  }
+
   currentRequestId.value = request.id
 
   url.value = request.url
@@ -173,7 +177,6 @@ async function addHeader() {
 }
 
 async function newRequest() {
-  isNewRequest.value = true
   currentRequestId.value = crypto.randomUUID()
 
   url.value = ''
@@ -193,8 +196,7 @@ async function resetCurrentRequest() {
 </script>
 
 <template>
-  <aside class="sidebar">
-    <ThemeSelector></ThemeSelector>
+  <Sidebar>
     <ul class="collection">
       <li
         @click="newRequest"
@@ -215,7 +217,7 @@ async function resetCurrentRequest() {
           :class="[
             'collection-item',
             {
-              'collection-item--active': id === currentRequestId
+              'collection-item--active': request.id === currentRequestId
             }
           ]"
         >
@@ -225,118 +227,8 @@ async function resetCurrentRequest() {
         </li>
       </template>
     </ul>
-  </aside>
-  <main class="content">
-    <section class="request-url">
-      <BaseSelect
-        v-model="method"
-        id="request-method"
-        class="method"
-        name="request-method"
-        :options="methodOptions"
-      ></BaseSelect>
-      <BaseInput
-        v-model="url"
-        class="url"
-        id="request-url"
-        name="request-url"
-        label="request url"
-      ></BaseInput>
-      <BaseButton id="request-send" class="send" name="request-send" @click="send">send</BaseButton>
-      <BaseButton id="request-save" class="save" name="request-save" @click="saveRequest"
-        >save</BaseButton
-      >
-    </section>
-    <section class="viewer">
-      <section class="request-cofiguration">
-        <div class="tabs">
-          <label for="request-body" :class="{ active: activeTab === 'body' }">
-            <p>body</p>
-            <input
-              @click="() => (activeTab = 'body')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-body"
-            />
-          </label>
-
-          <label for="request-headers" :class="{ active: activeTab === 'headers' }">
-            <p>headers</p>
-            <input
-              @click="() => (activeTab = 'headers')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-headers"
-            />
-          </label>
-
-          <label for="request-query" :class="{ active: activeTab === 'query' }">
-            <p>query</p>
-            <input
-              @click="() => (activeTab = 'query')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-query"
-            />
-          </label>
-
-          <label for="request-params" :class="{ active: activeTab === 'params' }">
-            <p>params</p>
-            <input
-              @click="() => (activeTab = 'params')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-params"
-            />
-          </label>
-        </div>
-        <div class="tab-content">
-          <BaseEditor
-            class="request-body-editor"
-            id="request-body-editor"
-            @update="body = $event"
-            :displayText="reqBody"
-            v-show="activeTab === 'body'"
-          ></BaseEditor>
-          <div class="request-headers" v-show="activeTab === 'headers'">
-            <form @submit.prevent>
-              <template v-for="(header, i) in headers" :key="i + header.name">
-                <BaseInput
-                  v-model="header.name"
-                  id="header-name"
-                  name="header-name"
-                  label="header-name"
-                ></BaseInput>
-                <BaseInput
-                  v-model="header.name"
-                  id="header-val"
-                  name="header-val"
-                  label="header-val"
-                ></BaseInput>
-              </template>
-              <BaseButton id="request-header-new" name="request-header-new" @click="addHeader"
-                >add</BaseButton
-              >
-            </form>
-          </div>
-        </div>
-      </section>
-      <section class="response-viewer">
-        <div class="stats">
-          <div class="response-code"></div>
-          <div class="response-time">{{ responseTime }} ms</div>
-          <div class="response"></div>
-        </div>
-        <div class="body">
-          <BaseEditor id="response-body-editor" :display-text="bodyText"></BaseEditor>
-        </div>
-      </section>
-    </section>
-  </main>
+  </Sidebar>
+  <Content :requests="requests" :request="currentRequestInformation"></Content>
 </template>
 
 <style>
@@ -358,239 +250,5 @@ async function resetCurrentRequest() {
 
   color: var(--foreground-color);
   background-color: var(--background-color);
-
-  & > .sidebar {
-    display: grid;
-    grid-area: sidebar;
-
-    gap: var(--spacing);
-    grid-auto-flow: row;
-    grid-auto-rows: minmax(var(--grid-slim-row-min-h), var(--grid-slim-row-h)) auto;
-
-    & > .collection {
-      display: flex;
-
-      gap: var(--spacing);
-      flex-direction: column;
-
-      width: 100%;
-      height: 100%;
-
-      overflow: hidden;
-      overflow-y: auto;
-
-      & > .collection-item {
-        display: grid;
-
-        grid-template-columns: minmax(1px, 0.1fr) minmax(1px, 1fr) minmax(1px, 0.1fr);
-        grid-template-areas: 'icon name delete';
-        align-items: center;
-
-        border: var(--border-size) solid var(--border-color);
-
-        padding: 0 var(--spacing);
-
-        &.collection-item--active {
-          background-color: var(--background-selected-color);
-
-          & > .delete {
-            color: var(--foreground-color);
-            background-color: var(--background-color);
-          }
-        }
-
-        & > .icon {
-          grid-area: icon;
-          fill: inherit !important;
-        }
-
-        & > .name {
-          grid-area: name;
-
-          padding: 0 var(--spacing);
-
-          overflow-x: scroll;
-
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-
-          &::-webkit-scrollbar {
-            display: none;
-          }
-        }
-
-        & > .delete {
-          grid-area: delete;
-
-          padding: var(--spacing);
-
-          justify-content: center;
-          justify-items: center;
-          justify-self: end;
-          align-items: center;
-
-          width: 50%;
-          height: 50%;
-
-          border: var(--border-size) solid var(--border-color);
-
-          &:hover {
-            background-color: var(--red-dim);
-          }
-
-          & > p {
-            text-align: center;
-          }
-        }
-
-        & > * {
-          display: flex;
-          align-items: center;
-
-          white-space: nowrap;
-          scroll-padding: 0;
-          scroll-margin: 0;
-        }
-      }
-    }
-  }
-
-  & > .content {
-    display: grid;
-    grid-area: content;
-
-    gap: var(--spacing);
-    grid-template-areas: 'url' 'viewer';
-    grid-template-rows:
-      minmax(var(--bt-cnt-url-min-h), var(--bt-cnt-url-h))
-      minmax(var(--bt-cnt-vw-min-h), var(--bt-cnt-vw-h));
-    grid-template-columns: minmax(var(--bt-cnt-min-h), 1fr);
-
-    & > .request-url {
-      display: grid;
-      grid-area: url;
-
-      gap: var(--spacing);
-      grid-template-areas: 'method uri send save';
-      grid-template-rows: minmax(var(--bt-cnt-url-min-h), 1fr);
-      grid-template-columns:
-        minmax(var(--bt-cnt-url-method-min-w), var(--bt-cnt-url-method-w))
-        minmax(var(--bt-cnt-url-uri-min-w), var(--bt-cnt-url-uri-w))
-        minmax(var(--bt-cnt-url-send-min-w), var(--bt-cnt-url-send-w))
-        minmax(var(--bt-cnt-url-save-min-w), var(--bt-cnt-url-save-w));
-
-      justify-items: center;
-
-      & > .method {
-        grid-area: method;
-        width: 100%;
-      }
-
-      & > .url {
-        grid-area: uri;
-      }
-
-      & > .send {
-        grid-area: send;
-      }
-
-      & > .save {
-        grid-area: save;
-      }
-    }
-
-    & > .viewer {
-      display: grid;
-      grid-area: viewer;
-
-      gap: var(--spacing);
-      grid-template-areas: 'request-cofiguration response-viewer';
-      grid-template-rows: minmax(var(--bt-cnt-vw-min-h), 1fr);
-      grid-template-columns:
-        minmax(var(--bt-cnt-vw-cfg-min-w), var(--bt-cnt-vw-cfg-w))
-        minmax(var(--bt-cnt-vw-res-min-w), var(--bt-cnt-vw-res-w));
-
-      & > .request-cofiguration {
-        display: grid;
-        grid-area: request-cofiguration;
-
-        gap: var(--spacing);
-        grid-template-areas: 'tabs' 'tab-content';
-        grid-template-rows:
-          minmax(var(--bt-cnt-vw-cfg-tabs-min-h), var(--bt-cnt-vw-cfg-tabs-h))
-          minmax(var(--bt-cnt-vw-cfg-tab-cnt-min-h), var(--bt-cnt-vw-cfg-tab-cnt-h));
-        grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
-
-        overflow: hidden;
-
-        & > .tabs {
-          display: flex;
-          grid-area: tabs;
-
-          gap: var(--spacing);
-
-          justify-content: stretch;
-
-          & > label {
-            display: flex;
-
-            justify-content: center;
-            align-items: center;
-
-            width: 100%;
-
-            border: var(--border-size) solid var(--border-color);
-
-            &.active {
-              background-color: var(--background-selected-color);
-            }
-
-            & > p {
-              text-align: center;
-            }
-          }
-        }
-
-        & > .tab-content {
-          display: flex;
-          grid-area: tab-content;
-
-          gap: var(--spacing);
-          align-items: center;
-
-          width: 100%;
-
-          & > .request-body-editor {
-            height: 100%;
-          }
-        }
-      }
-
-      & > .response-viewer {
-        display: grid;
-        grid-area: response-viewer;
-
-        gap: var(--spacing);
-        grid-template-areas: 'stats' 'body';
-        grid-template-rows:
-          minmax(var(--bt-cnt-vw-res-stats-min-h), var(--bt-cnt-vw-res-stats-h))
-          minmax(var(--bt-cnt-vw-res-body-cnt-min-h), var(--bt-cnt-vw-res-body-cnt-h));
-        grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
-
-        & > .stats {
-          display: flex;
-          grid-area: stats;
-
-          justify-items: center;
-          align-items: center;
-        }
-
-        & > .body {
-          display: flex;
-          grid-area: body;
-        }
-      }
-    }
-  }
 }
 </style>
