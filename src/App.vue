@@ -1,44 +1,28 @@
 <script setup lang="ts">
-import { computed, reactive, ref, toRefs } from 'vue'
-import { fetch, Response, type FetchOptions, type HttpVerb } from '@tauri-apps/api/http'
+import { computed, onMounted, reactive, ref, toRefs } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import WebIcon from './components/icons/WebIcon.vue'
-import Content from './components/Content.vue'
+import ContentView from './components/ContentView.vue'
+import type { RequestConfiguration } from '@/stores/types'
 
-// component internal types
-type Header = { name: string; val: string }
-type Query = { name: string; val: string }
+let requests = reactive<Record<string, RequestConfiguration>>({})
 
-type RequestConfiguration = {
-  id: string
-  url: string
-  method: string
-  body: string
-  query: Array<Query>
-  headers: Array<Header>
-}
+onMounted(() => {
+  const saved = localStorage.getItem('apps-requests')
 
-// static data
-const methodOptions = [
-  'get',
-  'put',
-  'post',
-  'patch',
-  'delete',
-  'options',
-  'head',
-  'connect',
-  'trace'
-]
+  if (saved !== null) {
+    const savedRequests: Record<string, RequestConfiguration> = JSON.parse(saved)
 
-const requests = reactive<Record<string, RequestConfiguration>>(
-  JSON.parse(localStorage.getItem('apps-requests') ?? '{}')
-)
+    for (const id in savedRequests) {
+      requests[id] = savedRequests[id]
+    }
+  }
+})
 
-const currentRequestId = ref<string>(crypto.randomUUID())
+const currentRequestId = computed(() => currentRequestInformation.id)
 
 const currentRequestInformation = reactive<RequestConfiguration>({
-  id: '',
+  id: crypto.randomUUID(),
   url: '',
   method: 'get',
   body: '',
@@ -46,74 +30,37 @@ const currentRequestInformation = reactive<RequestConfiguration>({
   headers: []
 })
 
-const { method, url, body, query, headers } = toRefs(currentRequestInformation)
+const { id, method, url, body, query, headers } = toRefs(currentRequestInformation)
+id.value = currentRequestId.value
 
-const reqBody = computed(() => body.value)
+async function saveRequest() {
+  requests[id.value] = {
+    id: id.value,
+    method: method.value,
+    url: url.value,
+    body: body.value,
+    query: query.value,
+    headers: headers.value
+  }
+
+  localStorage.setItem('apps-requests', JSON.stringify(requests))
+}
+
+async function removeRequest(removeId: string) {
+  if (currentRequestId.value === removeId) {
+    resetCurrentRequest()
+  }
+
+  delete requests[removeId]
+  localStorage.setItem('apps-requests', JSON.stringify(requests))
+}
 
 const isNewRequest = computed<boolean>(
   () => !Object.keys(requests).includes(currentRequestId.value)
 )
 
-async function saveRequest() {
-  currentRequestInformation['id'] = currentRequestId.value
-  requests[currentRequestId.value] = JSON.parse(JSON.stringify(currentRequestInformation))
-
-  localStorage.setItem('apps-requests', JSON.stringify(requests))
-}
-
-async function removeRequest(id: string) {
-  if (currentRequestId.value === id) {
-    resetCurrentRequest()
-  }
-
-  delete requests[id]
-  localStorage.setItem('apps-requests', JSON.stringify(requests))
-}
-
-let response = ref('')
-let responseTime = ref(0)
-let responseHeaders = ref('')
-
-const bodyText = computed(
-  () => 'Headers:\n' + responseHeaders.value + '\n\nBody:\n' + response.value
-)
-
-async function send() {
-  const start = new Date().getTime()
-
-  const opts: FetchOptions = { method: method?.value as HttpVerb }
-
-  if (
-    method?.value &&
-    method?.value.toLowerCase() !== 'get' &&
-    method?.value.toLowerCase() !== 'get'
-  ) {
-    opts.body = {
-      type: 'Json',
-      payload: body?.value
-    }
-  }
-
-  try {
-    const res: Response<unknown> = await fetch(url?.value as string, opts)
-
-    response.value = JSON.stringify(res.data, null, 2)
-    responseHeaders.value = JSON.stringify(res.headers, null, 2)
-  } catch (e) {
-    // TODO: show in the UI the errors
-  } finally {
-    const end = new Date().getTime()
-    responseTime.value = end - start
-  }
-}
-
 async function updateSelectedRequest(request: RequestConfiguration) {
-  if (!isNewRequest.value) {
-    saveRequest()
-  }
-
-  currentRequestId.value = request.id
-
+  id.value = request.id
   url.value = request.url
   query.value = request.query
   method.value = request.method
@@ -121,64 +68,8 @@ async function updateSelectedRequest(request: RequestConfiguration) {
   body.value = request.body
 }
 
-const requestBodyHeaders = ref(false)
-const requestBodyTab = ref(false)
-const requestQueryTab = ref(false)
-const requestParamsTab = ref(false)
-
-const activeTab = computed({
-  get: () => {
-    if (requestBodyHeaders.value) {
-      return 'headers'
-    }
-    if (requestQueryTab.value) {
-      return 'query'
-    }
-    if (requestParamsTab.value) {
-      return 'params'
-    }
-
-    return 'body'
-  },
-  set: (value: string) => {
-    if (value === 'headers') {
-      requestBodyHeaders.value = true
-      requestBodyTab.value = false
-      requestQueryTab.value = false
-      requestParamsTab.value = false
-      return
-    }
-
-    if (value === 'query') {
-      requestBodyHeaders.value = false
-      requestBodyTab.value = false
-      requestQueryTab.value = true
-      requestParamsTab.value = false
-      return
-    }
-
-    if (value === 'params') {
-      requestBodyHeaders.value = false
-      requestBodyTab.value = false
-      requestQueryTab.value = false
-      requestParamsTab.value = true
-      return
-    }
-
-    requestBodyHeaders.value = false
-    requestBodyTab.value = true
-    requestQueryTab.value = false
-    requestParamsTab.value = false
-  }
-})
-
-async function addHeader() {
-  headers.value.push({ name: '', val: '' })
-}
-
 async function newRequest() {
-  currentRequestId.value = crypto.randomUUID()
-
+  id.value = crypto.randomUUID()
   url.value = ''
   query.value = []
   method.value = 'get'
@@ -228,7 +119,11 @@ async function resetCurrentRequest() {
       </template>
     </ul>
   </Sidebar>
-  <Content :requests="requests" :request="currentRequestInformation"></Content>
+  <ContentView
+    :requests="requests"
+    :request="currentRequestInformation"
+    @save-request="saveRequest"
+  ></ContentView>
 </template>
 
 <style>

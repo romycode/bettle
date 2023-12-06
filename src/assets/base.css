@@ -6,7 +6,7 @@
 
   box-sizing: border-box;
 
-  background-color: transparent;
+  /* background-color: transparent; */
 
   border-radius: var(--border-radius);
 
@@ -28,6 +28,7 @@ button {
   appearance: none;
   color: var(--foreground-color);
 
+  background-color: var(--background-color);
   &:hover,
   &:focus {
     outline: none;

@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref, toRefs } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import BaseSelect from './BaseSelect.vue'
 import BaseInput from './BaseInput.vue'
 import BaseButton from './BaseButton.vue'
 import { fetch, type FetchOptions, type HttpVerb, type Response } from '@tauri-apps/api/http'
 import BaseEditor from './BaseEditor.vue'
-
-// component internal types
-type Header = { name: string; val: string }
-type Query = { name: string; val: string }
-
-type RequestConfiguration = {
-  id: string
-  url: string
-  method: string
-  body: string
-  query: Array<Query>
-  headers: Array<Header>
-}
+import type { RequestConfiguration } from '@/stores/types'
 
 // static data
 const methodOptions = [
@@ -32,15 +20,17 @@ const methodOptions = [
   'trace'
 ]
 
+const emit = defineEmits<{
+  saveRequest: []
+}>()
+
 const props = defineProps<{
   request: RequestConfiguration
-  requests: Record<string, RequestConfiguration>
 }>()
 
 // State
-const currentRequestId = ref<string>(crypto.randomUUID())
-
-const currentRequestInformation = toRefs(props).request.value
+const { request } = toRefs(props)
+const currentRequestInformation = request.value
 
 const { method, url, body, query, headers } = toRefs(currentRequestInformation)
 
@@ -86,10 +76,7 @@ async function send() {
 }
 
 async function saveRequest() {
-  currentRequestInformation['id'] = currentRequestId.value
-  requests[currentRequestId.value] = JSON.parse(JSON.stringify(currentRequestInformation))
-
-  localStorage.setItem('apps-requests', JSON.stringify(requests))
+  emit('saveRequest')
 }
 
 async function addHeader() {

@@ -57,8 +57,7 @@ defineEmits<{
 
   & > .input-box__text {
     width: 100%;
-
-    padding: var(--spacing);
+    height: 100%;
 
     appearance: none;
     border: none;

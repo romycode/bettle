@@ -44,6 +44,7 @@ function change(event: Event) {
 
 <style>
 .select-box {
+  display: flex;
   width: 100%;
 
   position: relative;

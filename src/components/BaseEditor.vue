@@ -34,7 +34,9 @@ onMounted(() => {
   let mytheme = EditorView.theme(
     {
       '&': {
-        maxHeight: '100%'
+        maxHeight: '100%',
+        fontFamily: 'Geis Mono !important',
+        fontSize: '19px !important'
       },
       '&.cm-gutter, &.cm-content': {
         minHeight: '100px'
