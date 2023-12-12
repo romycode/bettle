@@ -4,9 +4,8 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from '@/App.vue'
 
-import devtools from '@vue/devtools'
-
 if (process.env.NODE_ENV === 'development') {
+    const devtools = await import('@vue/devtools')
     devtools.connect()
 }
 

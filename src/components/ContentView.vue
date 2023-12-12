@@ -6,6 +6,7 @@ import BaseButton from './BaseButton.vue'
 import { fetch, type FetchOptions, type HttpVerb, type Response } from '@tauri-apps/api/http'
 import BaseEditor from './BaseEditor.vue'
 import type { RequestConfiguration } from '@/stores/types'
+import HeadersList from './HeadersList.vue'
 
 // static data
 const methodOptions = [
@@ -30,31 +31,41 @@ const props = defineProps<{
 
 // State
 const { request } = toRefs(props)
-const currentRequestInformation = request.value
-
-const { method, url, body, query, headers } = toRefs(currentRequestInformation)
+const { method, url, body, headers } = toRefs(request.value)
 
 const activeTab = ref('body')
 
 let response = ref('')
 let responseTime = ref(0)
+let responseCode = ref(0)
+let responseSize = ref('')
 let responseHeaders = ref('')
 
-const bodyText = computed(
-  () => 'Headers:\n' + responseHeaders.value + '\n\nBody:\n' + response.value
-)
+const bodyText = computed(() => 'Body:\n' + response.value + '\n')
+const headersText = computed(() => 'Headers:\n' + responseHeaders.value + '\n')
 
 const reqBody = computed(() => body.value)
 
 async function send() {
+  console.info('sending request')
+
   const start = new Date().getTime()
 
-  const opts: FetchOptions = { method: method?.value as HttpVerb }
+  const opts: FetchOptions = {
+    method: method?.value as HttpVerb,
+    headers: headers.value.reduce(
+      (acc, curr) => {
+        acc[curr.name] = curr.val
+        return acc
+      },
+      {} as Record<string, any>
+    )
+  }
 
   if (
     method?.value &&
     method?.value.toLowerCase() !== 'get' &&
-    method?.value.toLowerCase() !== 'get'
+    method?.value.toLowerCase() !== 'head'
   ) {
     opts.body = {
       type: 'Json',
@@ -65,10 +76,15 @@ async function send() {
   try {
     const res: Response<unknown> = await fetch(url?.value as string, opts)
 
+    console.info('request responded')
+
     response.value = JSON.stringify(res.data, null, 2)
     responseHeaders.value = JSON.stringify(res.headers, null, 2)
+    responseCode.value = res.status
+    responseSize.value = (new Blob([res.data as string]).size / 1024).toFixed(2)
   } catch (e) {
     // TODO: show in the UI the errors
+    console.error(e)
   } finally {
     const end = new Date().getTime()
     responseTime.value = end - start
@@ -77,10 +93,6 @@ async function send() {
 
 async function saveRequest() {
   emit('saveRequest')
-}
-
-async function addHeader() {
-  headers.value.push({ name: '', val: '' })
 }
 </script>
 
@@ -107,7 +119,7 @@ async function addHeader() {
       >
     </section>
     <section class="viewer">
-      <section class="request-cofiguration">
+      <section class="request-configuration">
         <div class="tabs">
           <label for="request-body" :class="{ active: activeTab === 'body' }">
             <p>body</p>
@@ -162,33 +174,18 @@ async function addHeader() {
             v-show="activeTab === 'body'"
           ></BaseEditor>
           <div class="request-headers" v-show="activeTab === 'headers'">
-            <form @submit.prevent>
-              <template v-for="(header, i) in headers" :key="i + header.name">
-                <BaseInput
-                  v-model="header.name"
-                  id="header-name"
-                  name="header-name"
-                  label="header-name"
-                ></BaseInput>
-                <BaseInput
-                  v-model="header.name"
-                  id="header-val"
-                  name="header-val"
-                  label="header-val"
-                ></BaseInput>
-              </template>
-              <BaseButton id="request-header-new" name="request-header-new" @click="addHeader"
-                >add</BaseButton
-              >
-            </form>
+            <HeadersList
+              :headers="headers"
+              @update="(event) => headers.splice(0, headers.length, ...event)"
+            ></HeadersList>
           </div>
         </div>
       </section>
       <section class="response-viewer">
         <div class="stats">
-          <div class="response-code"></div>
+          <div class="response-code">{{ responseCode }}</div>
           <div class="response-time">{{ responseTime }} ms</div>
-          <div class="response"></div>
+          <div class="response-size">{{ responseSize }} kb</div>
         </div>
         <div class="body">
           <BaseEditor id="response-body-editor" :display-text="bodyText"></BaseEditor>
@@ -254,7 +251,7 @@ async function addHeader() {
       minmax(var(--bt-cnt-vw-cfg-min-w), var(--bt-cnt-vw-cfg-w))
       minmax(var(--bt-cnt-vw-res-min-w), var(--bt-cnt-vw-res-w));
 
-    & > .request-cofiguration {
+    & > .request-configuration {
       display: grid;
       grid-area: request-cofiguration;
 
@@ -300,11 +297,18 @@ async function addHeader() {
         grid-area: tab-content;
 
         gap: var(--spacing);
+        flex-direction: column;
         align-items: center;
 
         width: 100%;
 
         & > .request-body-editor {
+          height: 100%;
+        }
+
+        & > .request-headers {
+          padding: var(--spacing) 0;
+          width: 100%;
           height: 100%;
         }
       }
@@ -325,8 +329,17 @@ async function addHeader() {
         display: flex;
         grid-area: stats;
 
+        gap: var(--spacing);
         justify-items: center;
         align-items: center;
+
+        & > .response-code, .response-time, .response-size {
+          display: flex;
+          align-items: center;
+          height: 100%;
+          padding: 0 var(--spacing);
+          border: var(--border-size) solid var(--border-color);
+        }
       }
 
       & > .body {

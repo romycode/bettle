@@ -3,6 +3,11 @@
   --border-size: 0.1rem;
   --border-radius: 0.15rem;
 
+  --button-min-w: 40px;
+
+  --grid-row-h: 0.04fr;
+  --grid-row-min-h: 40px;
+
   --grid-slim-row-h: 0.025fr;
   --grid-slim-row-min-h: 30px;
   --grid-slim-col-w: 0.025fr;

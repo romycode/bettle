@@ -5,7 +5,7 @@ withDefaults(
     name: string
     label: string
     showLabel?: boolean
-    modelValue: string
+    modelValue?: string
   }>(),
   {
     showLabel: false
@@ -13,6 +13,9 @@ withDefaults(
 )
 
 defineEmits<{
+  update: [value: string]
+  change: [value: string]
+  input: [value: string]
   'update:modelValue': [value: string]
 }>()
 </script>
@@ -20,8 +23,8 @@ defineEmits<{
 <template>
   <div class="input-box">
     <label class="input-box__label" :class="{ 'input-box__label--hidden': !showLabel }" :for="id">{{
-      label
-    }}</label>
+        label
+      }}</label>
     <input
       class="input-box__text"
       :id="id"
@@ -29,7 +32,19 @@ defineEmits<{
       :name="name"
       type="text"
       :value="modelValue"
-      @input="$emit('update:modelValue', $event.target?.value)"
+      @input="
+        (event) => {
+          const target: HTMLInputElement = event.target as HTMLInputElement
+          $emit('update:modelValue', target.value)
+          $emit('input', target.value)
+        }
+      "
+      @change="
+      (event) => {
+          const target: HTMLInputElement = event.target as HTMLInputElement
+          $emit('change', target.value)
+        }
+      "
     />
   </div>
 </template>
@@ -42,6 +57,7 @@ defineEmits<{
   align-items: center;
 
   width: 100%;
+  height: 100%;
 
   padding: 0 var(--spacing);
 

@@ -3,18 +3,22 @@ defineProps<{
   id: string
   name: string
 }>()
+
+defineEmits<{
+  click: []
+}>()
 </script>
 
 <template>
   <div class="button-box">
     <button
-      class="button-box__button"
       :id="id"
+      class="button-box__button"
       :data-testid="id"
       :name="name"
       type="button"
       role="button"
-      @click="$emit('click')"
+      @click.prevent="$emit('click')"
     >
       <slot></slot>
     </button>
@@ -44,6 +48,8 @@ defineProps<{
 
     appearance: none;
     border: none;
+
+    background-color: transparent;
 
     &:focus {
       outline: none;

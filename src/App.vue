@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, toRefs } from 'vue'
+import { computed, onMounted, reactive, toRefs } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import WebIcon from './components/icons/WebIcon.vue'
 import ContentView from './components/ContentView.vue'
@@ -27,13 +27,15 @@ const currentRequestInformation = reactive<RequestConfiguration>({
   method: 'get',
   body: '',
   query: [],
-  headers: []
+  headers: [{ name: '', val: '' }]
 })
 
 const { id, method, url, body, query, headers } = toRefs(currentRequestInformation)
 id.value = currentRequestId.value
 
 async function saveRequest() {
+  console.info('saving request')
+
   requests[id.value] = {
     id: id.value,
     method: method.value,
@@ -47,6 +49,8 @@ async function saveRequest() {
 }
 
 async function removeRequest(removeId: string) {
+  console.info('removing request')
+
   if (currentRequestId.value === removeId) {
     resetCurrentRequest()
   }

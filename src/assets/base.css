@@ -5,12 +5,9 @@
   padding: 0;
 
   box-sizing: border-box;
-
-  /* background-color: transparent; */
-
   border-radius: var(--border-radius);
 
-  font-family: 'Geist Mono Medium' !important;
+  font-family: 'Geist Mono Medium', monospace !important;
   font-size: 10pt;
   line-height: 1.5rem;
 }
