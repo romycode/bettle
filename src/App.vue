@@ -35,8 +35,6 @@ const { id, method, url, body, query, headers, params } = toRefs(currentRequestI
 id.value = currentRequestId.value
 
 async function saveRequest() {
-  console.info('saving request')
-
   requests[id.value] = {
     id: id.value,
     method: method.value,
@@ -51,8 +49,6 @@ async function saveRequest() {
 }
 
 async function removeRequest(removeId: string) {
-  console.info('removing request')
-
   if (currentRequestId.value === removeId) {
     await resetCurrentRequest()
   }

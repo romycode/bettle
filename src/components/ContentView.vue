@@ -70,8 +70,6 @@ function buildURL(value: string): string {
 }
 
 async function send() {
-  console.info('sending request')
-
   const start = new Date().getTime()
 
   const opts: FetchOptions = {
@@ -105,10 +103,7 @@ async function send() {
 
   try {
     const sendUrl = buildURL(url.value)
-    console.info(sendUrl)
     const res: Response<unknown> = await fetch(sendUrl, opts)
-
-    console.info('request responded')
 
     response.value = JSON.stringify(res.data, null, 2)
     for (let key in res.headers) {
