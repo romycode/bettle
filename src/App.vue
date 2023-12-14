@@ -10,29 +10,28 @@ import BaseListItem from '@/components/BaseListItem.vue'
 let requests = reactive<Record<string, RequestConfiguration>>({})
 
 onMounted(() => {
-  const saved = localStorage.getItem('apps-requests')
-
-  if (saved !== null) {
-    const savedRequests: Record<string, RequestConfiguration> = JSON.parse(saved)
-
-    for (const id in savedRequests) {
-      requests[id] = savedRequests[id]
-    }
+  const saved: string | null = localStorage.getItem('apps-requests')
+  if (saved === null) {
+    return
+  }
+  const savedRequests: Record<string, RequestConfiguration> = JSON.parse(saved)
+  for (const id in savedRequests) {
+    requests[id] = { params: [], ...savedRequests[id] }
   }
 })
 
 const currentRequestId = computed(() => currentRequestInformation.id)
-
 const currentRequestInformation = reactive<RequestConfiguration>({
   id: crypto.randomUUID(),
   url: '',
   method: 'get',
   body: '',
   query: [],
+  params: [],
   headers: [{ name: '', val: '' }]
 })
 
-const { id, method, url, body, query, headers } = toRefs(currentRequestInformation)
+const { id, method, url, body, query, headers, params } = toRefs(currentRequestInformation)
 id.value = currentRequestId.value
 
 async function saveRequest() {
@@ -44,7 +43,8 @@ async function saveRequest() {
     url: url.value,
     body: body.value,
     query: query.value,
-    headers: headers.value
+    params: params.value,
+    headers: headers.value,
   }
 
   localStorage.setItem('apps-requests', JSON.stringify(requests))
@@ -61,14 +61,13 @@ async function removeRequest(removeId: string) {
   localStorage.setItem('apps-requests', JSON.stringify(requests))
 }
 
-const isNewRequest = computed<boolean>(
-  () => !Object.keys(requests).includes(currentRequestId.value)
-)
+const isNewRequest = computed<boolean>(() => !Object.keys(requests).includes(currentRequestId.value))
 
 async function updateSelectedRequest(request: RequestConfiguration) {
   id.value = request.id
   url.value = request.url
   query.value = request.query
+  params.value = request.params
   method.value = request.method
   headers.value = request.headers
   body.value = request.body
@@ -79,6 +78,7 @@ async function newRequest() {
   url.value = ''
   query.value = []
   method.value = 'get'
+  params.value = []
   headers.value = []
   body.value = ''
 }
@@ -86,6 +86,7 @@ async function newRequest() {
 async function resetCurrentRequest() {
   url.value = ''
   query.value = []
+  params.value = []
   method.value = 'get'
   headers.value = []
   body.value = ''
@@ -129,7 +130,7 @@ async function resetCurrentRequest() {
   grid-template-areas: 'sidebar main';
   grid-template-rows: 1fr;
   grid-template-columns:
-    minmax(300px, 0.3fr)
+    minmax(200px, 0.3fr)
     minmax(min-content, 1fr);
   width: 100%;
   height: 100%;

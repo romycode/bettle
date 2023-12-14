@@ -51,14 +51,12 @@ const removeHeader = (header: Header) => {
           <BaseInput
             v-model.lazy="header.name"
             :id="'header-name-' + index.toString()"
-            class="name"
             :name="'header-name-' + index.toString()"
             :label="'header-name-' + index.toString()"
           ></BaseInput>
           <BaseInput
             v-model.lazy="header.val"
             :id="'header-val-' + index.toString()"
-            class="value"
             :name="'header-val-' + index.toString()"
             :label="'header-val-' + index.toString()"
           ></BaseInput>

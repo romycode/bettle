@@ -8,6 +8,11 @@ export type Query = {
   val: string
 }
 
+export type Param = {
+  name: string
+  val: string
+}
+
 export type RequestConfiguration = {
   id: string
   url: string
@@ -15,4 +20,5 @@ export type RequestConfiguration = {
   body: string
   query: Array<Query>
   headers: Array<Header>
+  params: Array<Param>
 }

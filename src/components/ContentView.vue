@@ -8,6 +8,8 @@ import BaseEditor from './BaseEditor.vue'
 import type { RequestConfiguration } from '@/stores/types'
 import HeadersList from './HeadersList.vue'
 import BaseTabs from '@/components/BaseTabs.vue'
+import ParamsList from '@/components/ParamsList.vue'
+import QueriesList from '@/components/QueriesList.vue'
 
 // static data
 const methodOptions = [
@@ -33,7 +35,7 @@ const props = defineProps<{
 
 // State
 const { request, isNew } = toRefs(props)
-const { method, url, body, headers } = toRefs(request.value)
+const { method, url, body, headers, query, params } = toRefs(request.value)
 
 let response = ref('')
 let responseTime = ref(0)
@@ -45,6 +47,27 @@ const bodyText = computed(() => (!isNew.value ? response.value : ''))
 const headersText = computed(() => responseHeaders.value)
 
 const reqBody = computed(() => body.value)
+
+function buildURL(value: string): string {
+  let url = ''
+  const parts = value.split('/')
+  for (let i = 0; i < parts.length; i++) {
+    const partsKey = parts[i]
+    if (partsKey.startsWith(':')) {
+      const param = params.value.find(p => p.name === partsKey.slice(1))
+      if (param) {
+        url += param.val
+      }
+    } else {
+      url += partsKey
+    }
+
+    if (i < parts.length -1) {
+      url += '/'
+    }
+  }
+  return url
+}
 
 async function send() {
   console.info('sending request')
@@ -59,7 +82,14 @@ async function send() {
         return acc
       },
       {} as Record<string, any>
-    )
+    ),
+    query: query.value.reduce(
+      (acc, curr) => {
+        acc[curr.name] = curr.val
+        return acc
+      },
+      {} as Record<string, any>
+    ),
   }
 
   if (
@@ -74,7 +104,9 @@ async function send() {
   }
 
   try {
-    const res: Response<unknown> = await fetch(url?.value as string, opts)
+    const sendUrl = buildURL(url.value)
+    console.info(sendUrl)
+    const res: Response<unknown> = await fetch(sendUrl, opts)
 
     console.info('request responded')
 
@@ -144,6 +176,16 @@ async function saveRequest() {
               @update="(event) => headers.splice(0, headers.length, ...event)"
               v-show="active === 'req-headers'"
             ></HeadersList>
+            <QueriesList
+              :queries="query"
+              @update="(event) => query.splice(0, query.length, ...event)"
+              v-show="active === 'req-query'"
+            ></QueriesList>
+            <ParamsList
+              :params="params"
+              @update="(event) => params.splice(0, params.length, ...event)"
+              v-show="active === 'req-param'"
+            ></ParamsList>
           </template>
         </BaseTabs>
       </section>
