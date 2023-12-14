@@ -65,6 +65,8 @@ onMounted(() => {
     }
   })
 
+  const { lineWrapping } = EditorView
+
   let startState = EditorState.create({
     doc: '',
     extensions: [
@@ -72,6 +74,7 @@ onMounted(() => {
       updater,
       json(),
       lineNumbers(),
+      lineWrapping,
       keymap.of(defaultKeymap),
       keymap.of([indentWithTab]),
       themeSwitcher.of(darkTheme)

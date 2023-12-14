@@ -3,6 +3,8 @@ import { reactive, watch } from 'vue'
 import BaseInput from '@/components/BaseInput.vue'
 import type { Header } from '@/stores/types'
 import BaseButton from '@/components/BaseButton.vue'
+import BaseList from '@/components/BaseList.vue'
+import BaseListItem from '@/components/BaseListItem.vue'
 
 const props = defineProps<{
   headers: Header[]
@@ -38,12 +40,14 @@ const removeHeader = (header: Header) => {
 
 <template>
   <div class="headers">
-    <div class="headers__title">
-      <BaseButton class="headers__title__add" id="add-header" name="add-header" @click="addHeader">+</BaseButton>
+    <div class="headers__actions">
+      <BaseButton class="headers__actions__add" id="add-header" name="add-header" @click="addHeader"
+        >+</BaseButton
+      >
     </div>
-    <ul class="headers__list">
+    <BaseList>
       <template v-for="(header, index) in headersList" :key="index">
-        <li class="headers__list__item">
+        <BaseListItem borderless>
           <BaseInput
             v-model.lazy="header.name"
             :id="'header-name-' + index.toString()"
@@ -59,86 +63,26 @@ const removeHeader = (header: Header) => {
             :label="'header-val-' + index.toString()"
           ></BaseInput>
           <div
-            class="delete red-dim"
+            class="list__item__action red-dim"
             @click="() => removeHeader({ name: header.name, val: header.val })"
           >
-            <p>x</p>
+            x
           </div>
-        </li>
+        </BaseListItem>
       </template>
-    </ul>
+    </BaseList>
   </div>
 </template>
 
 <style>
 .headers {
   display: flex;
-
-  gap: var(--spacing) 0;
   flex-direction: column;
-
+  gap: var(--spacing);
   width: 100%;
   height: 100%;
-
-  & > .headers__title {
+  & > .headers__actions {
     display: flex;
-
-    justify-content: flex-end;
-
-    & > .headers__title__add {
-      width: 100%;
-    }
-  }
-
-  & > .headers__list {
-    display: grid;
-
-    gap: var(--spacing);
-    grid-auto-flow: row;
-    grid-auto-rows: minmax(min-content, var(--grid-row-h));
-
-    width: 100%;
-    height: 100%;
-
-    & > .headers__list__item {
-      display: grid;
-
-      gap: 0 var(--spacing);
-      grid-template-columns: 1fr 1fr 0.1fr;
-      grid-template-areas: 'name value delete';
-      align-items: center;
-      justify-content: center;
-
-      & > .name {
-        grid-area: name;
-      }
-
-      & > .value {
-        grid-area: value;
-      }
-
-      & > .delete {
-        grid-area: delete;
-
-        justify-content: center;
-        justify-items: center;
-        align-items: center;
-
-        width: 100%;
-        height: 100%;
-
-        padding: var(--spacing);
-        border: var(--border-size) solid var(--border-color);
-
-        &:hover {
-          background-color: var(--red-dim);
-        }
-
-        & > p {
-          text-align: center;
-        }
-      }
-    }
   }
 }
 </style>

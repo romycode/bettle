@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>template</title>
+  <style>
+      *, *::after, *::before {
+          box-sizing: border-box;
+      }
+
+      html, body {
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+      }
+
+      .http_client {
+          display: grid;
+
+          grid-template-areas: 'header' 'content';
+          grid-template-rows: minmax(min-content, 0.05fr) auto;
+          grid-template-columns: 100%;
+
+          width: 100%;
+          height: 100%;
+
+          & > .header {
+              grid-area: header;
+              display: grid;
+
+              grid-template-areas: 'method url send save';
+              grid-template-columns: minmax(min-content, 0.2fr) minmax(min-content, 1fr) minmax(min-content, 0.1fr) minmax(min-content, 0.1fr);
+
+              width: 100%;
+              height: 100%;
+
+              & > .method {
+                  grid-area: method;
+              }
+
+              & > .url {
+                  grid-area: url;
+              }
+
+              & > .send {
+                  grid-area: send;
+              }
+
+              & > .save {
+                  grid-area: save;
+              }
+          }
+
+          & > .content {
+              grid-area: content;
+              display: grid;
+
+              grid-template-areas: 'request-config response-info';
+              grid-template-rows: minmax(min-content, 1fr);
+              grid-template-columns: minmax(min-content, 1fr) minmax(min-content, 1fr);
+
+              width: 100%;
+              height: 100%;
+
+              & > .request_config {
+                  grid-area: request-config;
+                  display: grid;
+
+                  grid-template-areas: 'request-option' 'request-option-content';
+                  grid-template-rows: minmax(min-content, 0.05fr) minmax(min-content, 1fr);
+                  grid-template-columns: minmax(min-content, 1fr);
+
+                  width: 100%;
+                  height: 100%;
+
+                  & > .request_option {
+                      grid-area: request-option;
+                  }
+
+                  & > .request_option_content {
+                      grid-area: request-option-content;
+                  }
+              }
+
+              & > .response_info {
+                  grid-area: response-info;
+                  display: grid;
+
+                  grid-template-areas: 'response-stats' 'response-content';
+                  grid-template-rows: minmax(min-content, 0.05fr) minmax(min-content, 1fr);
+                  grid-template-columns: minmax(min-content, 1fr);
+
+                  width: 100%;
+                  height: 100%;
+
+                  & > .response_stats {
+                      grid-area: response-stats;
+                      display: flex;
+
+                      gap: 0.5rem;
+                      align-items: center;
+
+                      width: 100%;
+                      height: 100%;
+
+                      padding: 0 0.2rem;
+                  }
+
+                  & > .response_content {
+                      grid-area: response-content;
+                  }
+              }
+          }
+      }
+  </style>
+</head>
+<body>
+  <div class="http_client">
+    <div class="header">
+      <div class="method"></div>
+      <div class="url"></div>
+      <div class="send"></div>
+      <div class="save"></div>
+    </div>
+    <div class="content">
+      <div class="request_config">
+        <div class="request_option"></div>
+        <div class="request_option_content"></div>
+      </div>
+      <div class="response_info">
+        <div class="response_stats">
+          <div>200</div>
+          <div>200 ms</div>
+          <div>49 kb</div>
+        </div>
+        <div class="response_content"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

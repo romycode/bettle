@@ -7,6 +7,7 @@ import { fetch, type FetchOptions, type HttpVerb, type Response } from '@tauri-a
 import BaseEditor from './BaseEditor.vue'
 import type { RequestConfiguration } from '@/stores/types'
 import HeadersList from './HeadersList.vue'
+import BaseTabs from '@/components/BaseTabs.vue'
 
 // static data
 const methodOptions = [
@@ -27,13 +28,12 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   request: RequestConfiguration
+  isNew: boolean
 }>()
 
 // State
-const { request } = toRefs(props)
+const { request, isNew } = toRefs(props)
 const { method, url, body, headers } = toRefs(request.value)
-
-const activeTab = ref('body')
 
 let response = ref('')
 let responseTime = ref(0)
@@ -41,8 +41,8 @@ let responseCode = ref(0)
 let responseSize = ref('')
 let responseHeaders = ref('')
 
-const bodyText = computed(() => 'Body:\n' + response.value + '\n')
-const headersText = computed(() => 'Headers:\n' + responseHeaders.value + '\n')
+const bodyText = computed(() => (!isNew.value ? response.value : ''))
+const headersText = computed(() => responseHeaders.value)
 
 const reqBody = computed(() => body.value)
 
@@ -79,7 +79,9 @@ async function send() {
     console.info('request responded')
 
     response.value = JSON.stringify(res.data, null, 2)
-    responseHeaders.value = JSON.stringify(res.headers, null, 2)
+    for (let key in res.headers) {
+      responseHeaders.value += key.toLocaleUpperCase() + ': ' + res.headers[key] + '\n'
+    }
     responseCode.value = res.status
     responseSize.value = (new Blob([res.data as string]).size / 1024).toFixed(2)
   } catch (e) {
@@ -114,82 +116,58 @@ async function saveRequest() {
         label="request url"
       ></BaseInput>
       <BaseButton id="request-send" class="send" name="request-send" @click="send">send</BaseButton>
-      <BaseButton id="request-save" class="save" name="request-save" @click="saveRequest"
-        >save</BaseButton
-      >
+      <BaseButton id="request-save" class="save" name="request-save" @click="saveRequest">
+        save
+      </BaseButton>
     </section>
     <section class="viewer">
       <section class="request-configuration">
-        <div class="tabs">
-          <label for="request-body" :class="{ active: activeTab === 'body' }">
-            <p>body</p>
-            <input
-              @click="() => (activeTab = 'body')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-body"
-            />
-          </label>
-
-          <label for="request-headers" :class="{ active: activeTab === 'headers' }">
-            <p>headers</p>
-            <input
-              @click="() => (activeTab = 'headers')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-headers"
-            />
-          </label>
-
-          <label for="request-query" :class="{ active: activeTab === 'query' }">
-            <p>query</p>
-            <input
-              @click="() => (activeTab = 'query')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-query"
-            />
-          </label>
-
-          <label for="request-params" :class="{ active: activeTab === 'params' }">
-            <p>params</p>
-            <input
-              @click="() => (activeTab = 'params')"
-              class="hide"
-              type="checkbox"
-              name="tab"
-              id="request-params"
-            />
-          </label>
-        </div>
-        <div class="tab-content">
-          <BaseEditor
-            class="request-body-editor"
-            id="request-body-editor"
-            @update="body = $event"
-            :displayText="reqBody"
-            v-show="activeTab === 'body'"
-          ></BaseEditor>
-          <div class="request-headers" v-show="activeTab === 'headers'">
+        <BaseTabs
+          :tabs="[
+            { name: 'body', val: 'req-body' },
+            { name: 'headers', val: 'req-headers' },
+            { name: 'query', val: 'req-query' },
+            { name: 'param', val: 'req-param' }
+          ]"
+          default="req-body"
+        >
+          <template #content="{ active }">
+            <BaseEditor
+              v-show="active === 'req-body'"
+              id="request-body-editor"
+              :displayText="reqBody"
+              class="request-body-editor"
+              @update="body = $event"
+            ></BaseEditor>
             <HeadersList
               :headers="headers"
               @update="(event) => headers.splice(0, headers.length, ...event)"
+              v-show="active === 'req-headers'"
             ></HeadersList>
-          </div>
-        </div>
+          </template>
+        </BaseTabs>
       </section>
       <section class="response-viewer">
-        <div class="stats">
-          <div class="response-code">{{ responseCode }}</div>
-          <div class="response-time">{{ responseTime }} ms</div>
-          <div class="response-size">{{ responseSize }} kb</div>
-        </div>
-        <div class="body">
-          <BaseEditor id="response-body-editor" :display-text="bodyText"></BaseEditor>
-        </div>
+        <BaseTabs
+          :tabs="[
+            { name: 'body', val: 'res-body' },
+            { name: 'headers', val: 'res-headers' }
+          ]"
+          default="res-body"
+        >
+          <template #content="{ active }">
+            <BaseEditor
+              v-show="active === 'res-body'"
+              id="response-body"
+              :displayText="bodyText"
+            ></BaseEditor>
+            <BaseEditor
+              v-show="active === 'res-headers'"
+              id="response-headers"
+              :displayText="headersText"
+            ></BaseEditor>
+          </template>
+        </BaseTabs>
       </section>
     </section>
   </main>
@@ -198,8 +176,7 @@ async function saveRequest() {
 <style>
 .content {
   display: grid;
-  grid-area: content;
-
+  grid-area: main;
   gap: var(--spacing);
   grid-template-areas: 'url' 'viewer';
   grid-template-rows:
@@ -210,15 +187,14 @@ async function saveRequest() {
   & > .request-url {
     display: grid;
     grid-area: url;
-
     gap: var(--spacing);
     grid-template-areas: 'method uri send save';
     grid-template-rows: minmax(var(--bt-cnt-url-min-h), 1fr);
     grid-template-columns:
-      minmax(var(--bt-cnt-url-method-min-w), var(--bt-cnt-url-method-w))
-      minmax(var(--bt-cnt-url-uri-min-w), var(--bt-cnt-url-uri-w))
-      minmax(var(--bt-cnt-url-send-min-w), var(--bt-cnt-url-send-w))
-      minmax(var(--bt-cnt-url-save-min-w), var(--bt-cnt-url-save-w));
+      minmax(60px, 0.1fr)
+      minmax(min-content, 1fr)
+      minmax(min-content, 0.1fr)
+      minmax(min-content, 0.1fr);
 
     justify-items: center;
 
@@ -243,109 +219,21 @@ async function saveRequest() {
   & > .viewer {
     display: grid;
     grid-area: viewer;
-
     gap: var(--spacing);
-    grid-template-areas: 'request-cofiguration response-viewer';
-    grid-template-rows: minmax(var(--bt-cnt-vw-min-h), 1fr);
+    grid-template-areas: 'request-configuration response-viewer';
+    grid-template-rows: minmax(min-content, 1fr);
     grid-template-columns:
-      minmax(var(--bt-cnt-vw-cfg-min-w), var(--bt-cnt-vw-cfg-w))
-      minmax(var(--bt-cnt-vw-res-min-w), var(--bt-cnt-vw-res-w));
+      1fr
+      1fr;
 
     & > .request-configuration {
+      grid-area: request-configuration;
       display: grid;
-      grid-area: request-cofiguration;
-
-      gap: var(--spacing);
-      grid-template-areas: 'tabs' 'tab-content';
-      grid-template-rows:
-        minmax(var(--bt-cnt-vw-cfg-tabs-min-h), var(--bt-cnt-vw-cfg-tabs-h))
-        minmax(var(--bt-cnt-vw-cfg-tab-cnt-min-h), var(--bt-cnt-vw-cfg-tab-cnt-h));
-      grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
-
-      overflow: hidden;
-
-      & > .tabs {
-        display: flex;
-        grid-area: tabs;
-
-        gap: var(--spacing);
-
-        justify-content: stretch;
-
-        & > label {
-          display: flex;
-
-          justify-content: center;
-          align-items: center;
-
-          width: 100%;
-
-          border: var(--border-size) solid var(--border-color);
-
-          &.active {
-            background-color: var(--background-selected-color);
-          }
-
-          & > p {
-            text-align: center;
-          }
-        }
-      }
-
-      & > .tab-content {
-        display: flex;
-        grid-area: tab-content;
-
-        gap: var(--spacing);
-        flex-direction: column;
-        align-items: center;
-
-        width: 100%;
-
-        & > .request-body-editor {
-          height: 100%;
-        }
-
-        & > .request-headers {
-          padding: var(--spacing) 0;
-          width: 100%;
-          height: 100%;
-        }
-      }
     }
 
     & > .response-viewer {
-      display: grid;
       grid-area: response-viewer;
-
-      gap: var(--spacing);
-      grid-template-areas: 'stats' 'body';
-      grid-template-rows:
-        minmax(var(--bt-cnt-vw-res-stats-min-h), var(--bt-cnt-vw-res-stats-h))
-        minmax(var(--bt-cnt-vw-res-body-cnt-min-h), var(--bt-cnt-vw-res-body-cnt-h));
-      grid-template-columns: minmax(var(--bt-cnt-vw-cfg-min-w), 1fr);
-
-      & > .stats {
-        display: flex;
-        grid-area: stats;
-
-        gap: var(--spacing);
-        justify-items: center;
-        align-items: center;
-
-        & > .response-code, .response-time, .response-size {
-          display: flex;
-          align-items: center;
-          height: 100%;
-          padding: 0 var(--spacing);
-          border: var(--border-size) solid var(--border-color);
-        }
-      }
-
-      & > .body {
-        display: flex;
-        grid-area: body;
-      }
+      display: grid;
     }
   }
 }

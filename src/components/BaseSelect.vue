@@ -39,34 +39,29 @@ function change(event: Event) {
         </option>
       </template>
     </select>
-    <label class="hide" for="select-label-01">request method</label>
   </div>
 </template>
 
 <style>
 .select-box {
   display: flex;
-  width: 100%;
-
   position: relative;
-
+  width: 100%;
   padding: var(--spacing) 0;
   border: var(--border-size) solid var(--border-color);
-
+  background-color: var(--background-color);
   & > .select-box__select {
+    appearance: none;
     width: 100%;
     height: 100%;
-
     border: none;
     padding: 0 0 0 var(--spacing);
-
     text-transform: uppercase;
-
     & > .select-box__select__option {
       padding: var(--spacing);
+      background-color: var(--background-color);
     }
   }
-
   &::before,
   &::after {
     --size: 0.3rem;
@@ -76,14 +71,12 @@ function change(event: Event) {
     right: 0.75rem;
     pointer-events: none;
   }
-
   &::before {
     border-left: var(--size) solid transparent;
     border-right: var(--size) solid transparent;
     border-bottom: var(--size) solid var(--foreground-color);
     top: calc(50% - var(--size-y));
   }
-
   &::after {
     border-left: var(--size) solid transparent;
     border-right: var(--size) solid transparent;

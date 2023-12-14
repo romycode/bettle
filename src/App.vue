@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, toRefs } from 'vue'
-import Sidebar from './components/Sidebar.vue'
+import Sidebar from './components/TheSidebar.vue'
 import WebIcon from './components/icons/WebIcon.vue'
 import ContentView from './components/ContentView.vue'
 import type { RequestConfiguration } from '@/stores/types'
+import BaseList from '@/components/BaseList.vue'
+import BaseListItem from '@/components/BaseListItem.vue'
 
 let requests = reactive<Record<string, RequestConfiguration>>({})
 
@@ -52,7 +54,7 @@ async function removeRequest(removeId: string) {
   console.info('removing request')
 
   if (currentRequestId.value === removeId) {
-    resetCurrentRequest()
+    await resetCurrentRequest()
   }
 
   delete requests[removeId]
@@ -92,40 +94,30 @@ async function resetCurrentRequest() {
 
 <template>
   <Sidebar>
-    <ul class="collection">
-      <li
-        @click="newRequest"
-        :class="[
-          'collection-item',
-          {
-            'collection-item--active': isNewRequest
-          }
-        ]"
-      >
-        <WebIcon class="icon" />
-        <span class="name">new request</span>
-        <div class="delete red-dim" @click="resetCurrentRequest"><p>c</p></div>
-      </li>
-      <template v-for="(request, id) in requests" :key="id">
-        <li
+    <BaseList>
+      <BaseListItem @click="newRequest" :active="isNewRequest">
+        <WebIcon class="list__item__icon" />
+        <span class="list__item__text">new request</span>
+        <div class="list__item__action red-dim" @click="resetCurrentRequest"><p>c</p></div>
+      </BaseListItem>
+      <template v-for="request in requests" :key="request.id">
+        <BaseListItem
           @click="() => updateSelectedRequest(request)"
-          :class="[
-            'collection-item',
-            {
-              'collection-item--active': request.id === currentRequestId
-            }
-          ]"
+          :active="request.id === currentRequestId"
         >
-          <WebIcon class="icon" />
-          <span class="name">{{ request.method + ' - ' + request.url }}</span>
-          <div class="delete red-dim" @click="() => removeRequest(request.id)"><p>x</p></div>
-        </li>
+          <WebIcon class="list__item__icon" />
+          <span class="list__item__text">{{ request.method + ' - ' + request.url }}</span>
+          <div class="list__item__action red-dim" @click="() => removeRequest(request.id)">
+            <p>x</p>
+          </div>
+        </BaseListItem>
       </template>
-    </ul>
+    </BaseList>
   </Sidebar>
   <ContentView
     :requests="requests"
     :request="currentRequestInformation"
+    :is-new="isNewRequest"
     @save-request="saveRequest"
   ></ContentView>
 </template>
@@ -133,20 +125,15 @@ async function resetCurrentRequest() {
 <style>
 #app {
   display: grid;
-
   gap: var(--spacing);
-  grid-template-areas: 'sidebar content';
-  grid-template-rows: minmax(var(--bt-min-h), var(--bt-h));
+  grid-template-areas: 'sidebar main';
+  grid-template-rows: 1fr;
   grid-template-columns:
-    minmax(var(--bt-sb-min-w), var(--bt-sb-w))
-    minmax(var(--bt-cnt-min-w), var(--bt-cnt-w));
-
+    minmax(300px, 0.3fr)
+    minmax(min-content, 1fr);
   width: 100%;
   height: 100%;
-  min-width: calc(var(--bt-sb-min-w) + var(--bt-cnt-min-w));
-
   padding: var(--spacing);
-
   color: var(--foreground-color);
   background-color: var(--background-color);
 }

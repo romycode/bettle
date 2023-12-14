@@ -6,6 +6,10 @@
   width: 0;
 }
 
+.borderless {
+  border: 0 !important;
+}
+
 .red-dim {
   &:hover {
     background-color: var(--red-dim);
