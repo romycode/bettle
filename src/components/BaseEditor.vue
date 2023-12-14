@@ -86,8 +86,8 @@ onMounted(() => {
     parent: document.querySelector(`#${props.id}`) as Element
   })
 
-  watch(displayText, () => {
-    if (view.state.doc.toString() !== displayText.value) {
+  watch(displayText, (value, oldValue) => {
+    if (value !== oldValue) {
       view.dispatch({
         changes: {
           from: 0,

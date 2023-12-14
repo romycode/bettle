@@ -52,17 +52,20 @@ const reqPreview = computed(() => {
   if (url.value.startsWith('https://')) {
     startPos = 8
   }
-  const host = url.value.slice(startPos, url.value.indexOf('/', startPos))
-  const path = url.value.slice(url.value.indexOf('/', startPos))
 
-  return method.value.toUpperCase() + ' ' + path + ' HTTP/1.1 \n\r' +
-         'Host: ' + host + '\n\r'
+  let parsedUrl = buildURL(url.value)
+
+  const host = parsedUrl.slice(startPos, parsedUrl.indexOf('/', startPos))
+  const path = parsedUrl.slice(parsedUrl.indexOf('/', startPos))
+
+  return method.value.toUpperCase() + ' ' + path + ' HTTP/1.1 \nHost: ' + host + '\n'
 })
 
 function buildURL(value: string): string {
   let url = ''
   const parts = value.split('/')
   for (let i = 0; i < parts.length; i++) {
+    console.info(url)
     const partsKey = parts[i]
     if (partsKey.startsWith(':')) {
       const param = params.value.find(p => p.name === partsKey.slice(1))
@@ -168,7 +171,7 @@ async function saveRequest() {
             { name: 'query', val: 'req-query' },
             { name: 'param', val: 'req-param' },
           ]"
-          default="req-body"
+          default="req-preview"
         >
           <template #content="{ active }">
             <BaseEditor
