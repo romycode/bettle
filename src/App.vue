@@ -16,7 +16,7 @@ onMounted(() => {
   }
   const savedRequests: Record<string, RequestConfiguration> = JSON.parse(saved)
   for (const id in savedRequests) {
-    requests[id] = { params: [], ...savedRequests[id] }
+    requests[id] = { ...savedRequests[id] }
   }
 })
 
@@ -28,7 +28,7 @@ const currentRequestInformation = reactive<RequestConfiguration>({
   body: '',
   query: [],
   params: [],
-  headers: [{ name: '', val: '' }]
+  headers: []
 })
 
 const { id, method, url, body, query, headers, params } = toRefs(currentRequestInformation)

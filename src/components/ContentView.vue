@@ -47,6 +47,17 @@ const bodyText = computed(() => (!isNew.value ? response.value : ''))
 const headersText = computed(() => responseHeaders.value)
 
 const reqBody = computed(() => body.value)
+const reqPreview = computed(() => {
+  let startPos = 7
+  if (url.value.startsWith('https://')) {
+    startPos = 8
+  }
+  const host = url.value.slice(startPos, url.value.indexOf('/', startPos))
+  const path = url.value.slice(url.value.indexOf('/', startPos))
+
+  return method.value.toUpperCase() + ' ' + path + ' HTTP/1.1 \n\r' +
+         'Host: ' + host + '\n\r'
+})
 
 function buildURL(value: string): string {
   let url = ''
@@ -151,14 +162,21 @@ async function saveRequest() {
       <section class="request-configuration">
         <BaseTabs
           :tabs="[
+            { name: 'preview', val: 'req-preview' },
             { name: 'body', val: 'req-body' },
             { name: 'headers', val: 'req-headers' },
             { name: 'query', val: 'req-query' },
-            { name: 'param', val: 'req-param' }
+            { name: 'param', val: 'req-param' },
           ]"
           default="req-body"
         >
           <template #content="{ active }">
+            <BaseEditor
+              v-show="active === 'req-preview'"
+              id="req-preview"
+              :displayText="reqPreview"
+              class="req-preview"
+            ></BaseEditor>
             <BaseEditor
               v-show="active === 'req-body'"
               id="request-body-editor"
