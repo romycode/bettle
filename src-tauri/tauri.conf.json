@@ -60,11 +60,11 @@
     },
     "windows": [
       {
+        "title": "Bettle",
+        "resizable": true,
         "fullscreen": false,
         "height": 600,
-        "resizable": true,
-        "title": "Bettle",
-        "width": 800
+        "width": 1200
       }
     ]
   }

@@ -6,16 +6,23 @@ import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap, indentWithTab } from '@codemirror/commands'
 import { json } from '@codemirror/lang-json'
 
-import { smoothy as lightTheme, boysAndGirls as darkTheme } from 'thememirror'
+import { boysAndGirls as darkTheme, smoothy as lightTheme } from 'thememirror'
 import { useTheme } from '@/stores/theme'
 import { storeToRefs } from 'pinia'
 
 const { theme } = storeToRefs(useTheme())
 
-const props = defineProps<{
+const props = withDefaults(
+  defineProps<{
   id: string
+  readonly?: boolean
   displayText?: string
-}>()
+  }>(),
+  {
+    readonly: false,
+    displayText: ''
+  }
+)
 
 const emits = defineEmits<{
   update: [value: string]
@@ -29,11 +36,13 @@ const updateContent = (value: string) => {
 }
 
 const { displayText } = toRefs(props)
+content.value = displayText.value
 
 onMounted(() => {
   let mytheme = EditorView.theme(
     {
       '&': {
+        overflow: 'auto',
         maxHeight: '100%',
         fontFamily: 'Geis Mono !important',
         fontSize: '19px !important'
@@ -45,8 +54,7 @@ onMounted(() => {
         padingLeft: '0'
       },
       '&.cm-scroller': {
-        overflow: 'scroll',
-        maxHeight: '100%'
+        overflow: 'auto',
       },
       '&.cm-editor': {
         height: '100%'
@@ -66,18 +74,20 @@ onMounted(() => {
   })
 
   const { lineWrapping } = EditorView
+  const { readOnly } = EditorState
 
   let startState = EditorState.create({
-    doc: '',
+    doc: content.value,
     extensions: [
       mytheme,
       updater,
       json(),
       lineNumbers(),
       lineWrapping,
+      readOnly.of(props.readonly),
       keymap.of(defaultKeymap),
       keymap.of([indentWithTab]),
-      themeSwitcher.of(darkTheme)
+      themeSwitcher.of(theme.value === 'light' ? lightTheme : darkTheme)
     ]
   })
 
@@ -87,23 +97,21 @@ onMounted(() => {
   })
 
   watch(displayText, (value, oldValue) => {
-    if (value !== oldValue) {
+    if (view.state.doc.toString() !== value && value !== oldValue) {
       view.dispatch({
         changes: {
           from: 0,
           to: view.state.doc.length,
-          insert: displayText.value
+          insert: value
         }
       })
     }
   })
 
-  watch(theme, (newValue, oldValue) => {
-    if (newValue !== oldValue) {
-      view.dispatch({
-        effects: themeSwitcher.reconfigure(newValue === 'light' ? lightTheme : darkTheme)
-      })
-    }
+  watch(theme, (value) => {
+    view.dispatch({
+      effects: themeSwitcher.reconfigure(value === 'light' ? lightTheme : darkTheme)
+    })
   })
 })
 </script>
@@ -117,5 +125,6 @@ onMounted(() => {
   display: block;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
 }
 </style>

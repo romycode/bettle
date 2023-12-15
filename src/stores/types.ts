@@ -21,4 +21,5 @@ export type RequestConfiguration = {
   query: Array<Query>
   headers: Array<Header>
   params: Array<Param>
+  lastResponse: string
 }

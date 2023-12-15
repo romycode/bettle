@@ -11,11 +11,11 @@ import ThemeSelector from '@/components/ThemeSelector.vue'
 
 <style>
 .sidebar {
-  display: grid;
   grid-area: sidebar;
+  display: flex;
   gap: var(--spacing);
-  grid-auto-flow: row;
-  grid-auto-rows: minmax(var(--grid-slim-row-min-h), var(--grid-slim-row-h)) auto;
-  grid-auto-columns: 1fr;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
 }
 </style>

@@ -35,15 +35,14 @@ const props = defineProps<{
 
 // State
 const { request, isNew } = toRefs(props)
-const { method, url, body, headers, query, params } = toRefs(request.value)
+const { method, url, body, headers, query, params, lastResponse } = toRefs(request.value)
 
-let response = ref('')
 let responseTime = ref(0)
 let responseCode = ref(0)
 let responseSize = ref('')
 let responseHeaders = ref('')
 
-const bodyText = computed(() => (!isNew.value ? response.value : ''))
+const bodyText = computed(() => (!isNew.value ? lastResponse.value : ''))
 const headersText = computed(() => responseHeaders.value)
 
 const reqBody = computed(() => body.value)
@@ -58,7 +57,7 @@ const reqPreview = computed(() => {
   const host = parsedUrl.slice(startPos, parsedUrl.indexOf('/', startPos))
   const path = parsedUrl.slice(parsedUrl.indexOf('/', startPos))
 
-  return method.value.toUpperCase() + ' ' + path + ' HTTP/1.1 \nHost: ' + host + '\n'
+  return method.value.toUpperCase() + ' ' + path + ' HTTP/1.1 \nHost: ' + host + '\n' + '\n' + body.value
 })
 
 function buildURL(value: string): string {
@@ -119,7 +118,7 @@ async function send() {
     const sendUrl = buildURL(url.value)
     const res: Response<unknown> = await fetch(sendUrl, opts)
 
-    response.value = JSON.stringify(res.data, null, 2)
+    lastResponse.value = JSON.stringify(res.data, null, 2)
     for (let key in res.headers) {
       responseHeaders.value += key.toLocaleUpperCase() + ': ' + res.headers[key] + '\n'
     }
@@ -132,6 +131,8 @@ async function send() {
     const end = new Date().getTime()
     responseTime.value = end - start
   }
+
+  await saveRequest()
 }
 
 async function saveRequest() {
@@ -241,7 +242,6 @@ async function saveRequest() {
     minmax(var(--bt-cnt-url-min-h), var(--bt-cnt-url-h))
     minmax(var(--bt-cnt-vw-min-h), var(--bt-cnt-vw-h));
   grid-template-columns: minmax(var(--bt-cnt-min-h), 1fr);
-
   & > .request-url {
     display: grid;
     grid-area: url;
@@ -253,44 +253,32 @@ async function saveRequest() {
       minmax(min-content, 1fr)
       minmax(min-content, 0.1fr)
       minmax(min-content, 0.1fr);
-
     justify-items: center;
-
     & > .method {
       grid-area: method;
       width: 100%;
     }
-
     & > .url {
       grid-area: uri;
     }
-
     & > .send {
       grid-area: send;
     }
-
     & > .save {
       grid-area: save;
     }
   }
-
   & > .viewer {
     display: grid;
     grid-area: viewer;
     gap: var(--spacing);
-    grid-template-areas: 'request-configuration response-viewer';
-    grid-template-rows: minmax(min-content, 1fr);
-    grid-template-columns:
-      1fr
-      1fr;
-
+    grid-auto-flow: row;
+    grid-template-rows: repeat(auto-fit, minmax(345px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(345px, 1fr));
     & > .request-configuration {
-      grid-area: request-configuration;
       display: grid;
     }
-
     & > .response-viewer {
-      grid-area: response-viewer;
       display: grid;
     }
   }

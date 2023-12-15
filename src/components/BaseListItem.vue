@@ -64,9 +64,9 @@ withDefaults(
   }
   & > .list__item__action {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 10%;
+    place-items: center;
+    place-content: center;
+    width: max(50px, 10%);
     height: 75%;
     padding: var(--spacing);
     border: var(--border-size) solid var(--border-color);

@@ -8,11 +8,9 @@
 
 <style>
 .list {
-  display: grid;
+  display: flex;
   gap: var(--spacing);
-  grid-auto-flow: row;
-  grid-auto-rows: minmax(40px, 0.05fr);
-  grid-auto-columns: 1fr;
+  flex-direction: column;
   list-style: none;
   margin: 0;
   padding: 0;

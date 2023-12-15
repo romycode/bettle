@@ -4,7 +4,6 @@
   font-family: 'Geist Mono Medium', monospace;
   font-size: 11pt;
   box-sizing: border-box;
-  overflow: hidden;
   scrollbar-color: var(--foreground-color) var(--background-color);
   scrollbar-width: thin;
   scrollbar-gutter: auto;
@@ -13,6 +12,7 @@
 @supports not (scrollbar-width: thin) {
   *::-webkit-scrollbar {
     height: 2px;
+    width: 2px;
   }
   *::-webkit-scrollbar-track {
     background-color: var(--background-color);
@@ -29,6 +29,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--background-color);
+  overflow: hidden;
 }
 
 textarea,

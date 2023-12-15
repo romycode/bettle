@@ -28,10 +28,11 @@ const currentRequestInformation = reactive<RequestConfiguration>({
   body: '',
   query: [],
   params: [],
-  headers: []
+  headers: [],
+  lastResponse: ''
 })
 
-const { id, method, url, body, query, headers, params } = toRefs(currentRequestInformation)
+const { id, method, url, body, query, headers, params, lastResponse } = toRefs(currentRequestInformation)
 id.value = currentRequestId.value
 
 async function saveRequest() {
@@ -43,6 +44,7 @@ async function saveRequest() {
     query: query.value,
     params: params.value,
     headers: headers.value,
+    lastResponse: lastResponse.value,
   }
 
   localStorage.setItem('apps-requests', JSON.stringify(requests))
@@ -67,6 +69,7 @@ async function updateSelectedRequest(request: RequestConfiguration) {
   method.value = request.method
   headers.value = request.headers
   body.value = request.body
+  lastResponse.value = request.lastResponse
 }
 
 async function newRequest() {
@@ -77,6 +80,7 @@ async function newRequest() {
   params.value = []
   headers.value = []
   body.value = ''
+  lastResponse.value = ''
 }
 
 async function resetCurrentRequest() {
@@ -86,6 +90,7 @@ async function resetCurrentRequest() {
   method.value = 'get'
   headers.value = []
   body.value = ''
+  lastResponse.value = ''
 }
 </script>
 
@@ -124,14 +129,13 @@ async function resetCurrentRequest() {
   display: grid;
   gap: var(--spacing);
   grid-template-areas: 'sidebar main';
-  grid-template-rows: 1fr;
-  grid-template-columns:
-    minmax(200px, 0.3fr)
-    minmax(min-content, 1fr);
-  width: 100%;
-  height: 100%;
+  grid-template-rows: minmax(300px, 1fr);
+  grid-template-columns: minmax(200px, 0.3fr) minmax(300px, 1fr);
+  width: max(500px, 100%);
+  height: max(500px, 100%);
   padding: var(--spacing);
   color: var(--foreground-color);
   background-color: var(--background-color);
+  overflow: hidden;
 }
 </style>

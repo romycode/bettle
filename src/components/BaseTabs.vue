@@ -32,7 +32,7 @@ const activeTab = ref(props.default)
   display: grid;
   gap: var(--spacing);
   grid-template-areas: 'tabs' 'content';
-  grid-template-rows: minmax(min-content, 0.05fr) minmax(min-content, 1fr);
+  grid-template-rows: minmax(40px, 0.05fr) minmax(max-content, 1fr);
   grid-template-columns: 1fr;
   width: 100%;
   height: 100%;
